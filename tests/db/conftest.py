@@ -1,11 +1,11 @@
 import pytest
-from db.db import Database
-from db.repository import Repository
+from auto_vpn.db.db import Database
+from auto_vpn.db.repository import Repository
 import os
 import tempfile
 
 # Import your models directly
-from db.models import Server, VPNPeer
+from auto_vpn.db.models import Server, VPNPeer
 
 @pytest.fixture(scope='function')
 def test_db_path():

@@ -22,7 +22,7 @@ class Database:
         self.db.init(database_path, pragmas=pragmas)
         self.initialized = True
         
-        from db.models import BaseModel, Server, VPNPeer, Setting
+        from auto_vpn.db.models import BaseModel, Server, VPNPeer, Setting
         self.db.create_tables([Server, VPNPeer, Setting])
 
     @contextmanager

@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "auto-vpn"
+version = "0.1.0"
+description = "VPN Management System with Streamlit UI"
+authors = ["Sergei Varibrus"]
+readme = "README.md"
+packages = [{include = "auto_vpn", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12.1"
+cryptography = "^41.0.7"
+ediri-vultr = "^2.20.1"
+paramiko = "^3.5.0"
+peewee = "^3.17.8"
+petname = "^2.6"
+pulumi = "^3.140.0"
+pycountry = "^24.6.1"
+python-dotenv = "^1.0.1"
+pytz = "^2024.2"
+requests = "^2.32.3"
+streamlit = "^1.40.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+black = "^24.2.0"
+isort = "^5.13.2"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+pytest-cov = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--cov=src/auto_vpn --cov-report=term-missing"

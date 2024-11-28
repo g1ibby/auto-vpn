@@ -1,16 +1,14 @@
-import uuid
-import sys
 import pytz
 import requests
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 
-from db.models import Server, VPNPeer
-from db.db import db_instance
-from db.repository import Repository
-from providers.infra_manager import InfrastructureManager
-from providers.vultr_manager import VultrManager
-from providers.vultr_api import VultrAPI
+from auto_vpn.db.models import Server, VPNPeer
+from auto_vpn.db.db import db_instance
+from auto_vpn.db.repository import Repository
+from auto_vpn.providers.infra_manager import InfrastructureManager
+from auto_vpn.providers.vultr_manager import VultrManager
+from auto_vpn.providers.vultr_api import VultrAPI
 from .wg_manager import WireGuardManager
 from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key
 

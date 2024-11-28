@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from db.repository import Repository
+from auto_vpn.db.repository import Repository
 
 class TestRepository:
     def test_create_and_list_servers(self, repository: Repository):

@@ -1,9 +1,9 @@
 from datetime import timedelta
 import streamlit as st
 import atexit
-from app.app import App
-from app.periodic_task import PeriodicTask
-from app.vpn_monitor import VPNMonitor, VPNStateManager
+from auto_vpn.core.app import App
+from auto_vpn.core.periodic_task import PeriodicTask
+from auto_vpn.core.vpn_monitor import VPNMonitor, VPNStateManager
 
 # Initialize state manager
 vpn_state_manager = VPNStateManager()
