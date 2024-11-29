@@ -1,4 +1,6 @@
 import os
+import json
+from typing import Dict, Any, Optional
 from pulumi import automation as auto
 import pulumi
 import ediri_vultr as vultr
@@ -10,16 +12,28 @@ class VultrManager(InfrastructureManager):
     InfrastructureManager subclass for managing Vultr resources.
     """
 
-    def __init__(self, pulumi_config_passphrase, vultr_api_key, project_name=None):
+    def __init__(
+            self, 
+            pulumi_config_passphrase, 
+            vultr_api_key, 
+            project_name=None, 
+            stack_state: Optional[Dict[str, Any]] = None):
         """
         Initialize the VultrManager.
 
         :param pulumi_config_passphrase: Passphrase for Pulumi config encryption.
         :param vultr_api_key: API key for Vultr.
         :param project_name: Optional name for the Pulumi project.
+        :param stack_state: Optional dictionary containing previously exported stack state.
         """
         self.vultr_api_key = vultr_api_key
-        super().__init__(pulumi_config_passphrase, project_name)
+        self._stack_state_dict = stack_state
+
+        super().__init__(
+                pulumi_config_passphrase, 
+                project_name, 
+                stack_state=stack_state
+        )
 
     def pulumi_program(self):
         """

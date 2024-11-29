@@ -16,7 +16,6 @@ docker-run:
 		--name auto-vpn \
 		-v $(PWD)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro \
 		-v $(HOME)/.ssh:/home/appuser/.ssh:ro \
-		-v $(HOME)/.pulumi:/home/appuser/.pulumi:rw \
 		auto-vpn
 
 docker-run-debug:

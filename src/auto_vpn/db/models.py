@@ -26,6 +26,7 @@ class Server(BaseModel):
     ssh_private_key = TextField()
     ssh_public_key = TextField()
     location = CharField()
+    stack_state = TextField()
     server_type = CharField()
     created_at = DateTimeField(
         default=lambda: datetime.now(pytz.UTC),

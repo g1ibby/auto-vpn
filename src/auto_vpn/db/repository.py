@@ -19,6 +19,7 @@ class Repository:
         ssh_private_key: str,
         ssh_public_key: str,
         location: str,
+        stack_state: str,
         server_type: str
     ) -> Server:
         """Create a new server."""
@@ -32,6 +33,7 @@ class Repository:
                     ssh_private_key=ssh_private_key,
                     ssh_public_key=ssh_public_key,
                     location=location,
+                    stack_state=stack_state,
                     server_type=server_type
                 )
                 return server

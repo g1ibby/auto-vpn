@@ -1,7 +1,8 @@
 import pytz
+import json
 import requests
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 from auto_vpn.db.models import Server, VPNPeer
 from auto_vpn.db.db import db_instance
@@ -130,6 +131,8 @@ class App:
         # Deploy the Pulumi stack to create the server
         up_result = provider_manager.up(location=location, server_type=server_type)
 
+        stack_state = provider_manager.export_stack_state()
+
         # Extract outputs from Pulumi stack
         instance_ip = up_result.outputs.get('instance_ip').value
 
@@ -142,6 +145,7 @@ class App:
             ssh_private_key="",  # Placeholder, as SSH key management is removed
             ssh_public_key="",   # Placeholder
             location=location,
+            stack_state=json.dumps(stack_state, indent=2),
             server_type=server_type,
         )
         return server
@@ -163,7 +167,9 @@ class App:
         if not server:
             raise ValueError(f"Server with ID {server_id} does not exist.")
 
-        provider_manager = self._initialize_provider_manager(server.provider, server.project_name)
+        stack_state_loaded: Optional[Dict[str, Any]] = json.loads(server.stack_state)
+
+        provider_manager = self._initialize_provider_manager(server.provider, server.project_name, stack_state_loaded)
         if not provider_manager:
             raise ValueError(f"No manager available for provider: {server.provider}")
 
@@ -436,7 +442,7 @@ class App:
 
     # ----------------- Utility Methods ----------------- #
 
-    def _initialize_provider_manager(self, provider: str, project_name: str) -> Optional[InfrastructureManager]:
+    def _initialize_provider_manager(self, provider: str, project_name: str, stack_state: Optional[Dict[str, Any]] = None) -> Optional[InfrastructureManager]:
         """
         Initialize the InfrastructureManager for a given provider.
         :param provider: Provider type ('vultr' or 'linode')
@@ -448,7 +454,8 @@ class App:
             return VultrManager(
                 pulumi_config_passphrase=DEFAULT_PULUMI_CONFIG_PASSPHRASE,
                 vultr_api_key=self.provider_credentials['vultr'],
-                project_name=project_name
+                project_name=project_name,
+                stack_state=stack_state
             )
         elif provider == 'linode':
             # Add Linode manager implementation when needed

@@ -58,6 +58,7 @@ RUN poetry config virtualenvs.create false && \
 
 # Copy application code
 COPY src/auto_vpn ./auto_vpn
+COPY pulumi_plugins ./pulumi_plugins
 COPY Makefile ./
 
 # Create .streamlit directory and copy config
