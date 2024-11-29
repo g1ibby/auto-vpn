@@ -1,0 +1,8 @@
+[secrets]
+
+files = [ "~/.streamlit/secrets.toml", "/etc/secrets/secrets.toml",]
+
+[browser]
+
+gatherUsageStats = false
+
