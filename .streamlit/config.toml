@@ -1,6 +1,10 @@
 [secrets]
 
-files = [ "~/.streamlit/secrets.toml", "/etc/secrets/secrets.toml",]
+files = [ ".streamlit/secrets.toml", "/etc/secrets/secrets.toml",]
+
+[server]
+
+address = "0.0.0.0"
 
 [browser]
 
