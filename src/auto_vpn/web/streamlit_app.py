@@ -1,9 +1,30 @@
 from datetime import timedelta
 import streamlit as st
 import atexit
+import yaml
+from yaml.loader import SafeLoader
+import streamlit_authenticator as stauth
 from auto_vpn.core.app import App
 from auto_vpn.core.periodic_task import PeriodicTask
 from auto_vpn.core.vpn_monitor import VPNMonitor, VPNStateManager
+
+# Load config file
+config = yaml.load(st.secrets['authentication']['credentials'], Loader=SafeLoader)
+
+st.set_page_config(
+    page_title="VPN Peer Manager",
+    page_icon="🔒",
+    layout="wide"
+)
+
+# Create an authentication object
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    auto_hash=True
+)
 
 # Initialize state manager
 vpn_state_manager = VPNStateManager()
@@ -191,11 +212,25 @@ def display_status_sidebar():
             st.sidebar.error(f"Last check error: {status['error']}")
 
 def main():
-    st.set_page_config(
-        page_title="VPN Peer Manager",
-        page_icon="🔒",
-        layout="wide"
-    )
+    # Authentication
+    try:
+        authenticator.login(location='main', key='Login')
+    except Exception as e:
+        st.error(e)
+        st.stop()
+
+    if st.session_state["authentication_status"] is False:
+        st.error('Username/password is incorrect')
+        st.stop()
+    elif st.session_state["authentication_status"] is None:
+        st.warning('Please enter your username and password')
+        st.stop()
+
+    # If we get here, user is authenticated
+    with st.sidebar:
+        authenticator.logout()
+        st.write(f'Welcome *{st.session_state["name"]}*')
+        st.divider()
 
     # Initialize VPN monitor and periodic task if not already initialized
     if 'vpn_monitor' not in st.session_state:
