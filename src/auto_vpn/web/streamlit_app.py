@@ -263,7 +263,7 @@ def main():
                 return None
 
         periodic_task_ping = PeriodicTask(
-            interval_seconds=60 * 5,
+            interval_seconds=60 * 10,
             task_function=ping_self,
         )
         st.session_state.periodic_task_ping = periodic_task_ping
