@@ -62,6 +62,8 @@ class InfrastructureManager(ABC):
 
         self.location = "ewr" 
         self.server_type ="vc2-1c-1gb" 
+        self.install_plugins()
+
 
     def create_or_select_stack(self):
         """Create or select a Pulumi stack."""
@@ -265,7 +267,6 @@ class InfrastructureManager(ABC):
         self.server_type = server_type
 
         self.set_stack_config()
-        self.install_plugins()
         print("Refreshing the stack to get the latest state...")
         self.stack.refresh(on_output=print)
         print("Refreshing complete.")
