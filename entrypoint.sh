@@ -47,7 +47,7 @@ credentials:
         - admin
 cookie:
   expiry_days: 30
-  key: 'some_signature_key'
+  key: 'signature_key'
   name: 'vpn_auth_cookie'
 """
 EOF

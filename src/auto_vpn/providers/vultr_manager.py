@@ -93,7 +93,7 @@ class VultrManager(InfrastructureManager):
 
         :return: A dictionary with provider names as keys and versions as values.
         """
-        return {"vultr": "2.20.1"}  # Replace with the correct version if needed
+        return {"vultr": "2.22.1"}  # Replace with the correct version if needed
 
     def get_outputs(self, up_result):
         """
