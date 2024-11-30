@@ -15,7 +15,6 @@ docker-run:
 	docker run -p 8501:8501 \
 		--name auto-vpn \
 		-v $(PWD)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro \
-		-v $(HOME)/.ssh:/home/appuser/.ssh:ro \
 		auto-vpn
 
 docker-run-debug:

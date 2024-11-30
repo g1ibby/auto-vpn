@@ -64,6 +64,10 @@ COPY Makefile ./
 # Create .streamlit directory and copy config
 COPY .streamlit/config.toml /app/.streamlit/config.toml
 
+# Copy the entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
@@ -79,6 +83,5 @@ ENV STREAMLIT_SERVER_PORT=8501
 # Expose Streamlit port
 EXPOSE 8501
 
-# Set entrypoint to use make
-ENTRYPOINT ["make"]
-CMD ["run"]
+# Set entrypoint to the script (after tini)
+ENTRYPOINT ["/entrypoint.sh"]
