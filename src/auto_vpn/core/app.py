@@ -29,7 +29,7 @@ class App:
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
     def __init__(self, 
-             db_path: str = 'data_layer.db', 
+             db_url: str = 'sqlite:///data_layer.db', 
              inactivity_threshold: Optional[timedelta] = None,
              vultr_api_key: Optional[str] = None,
              linode_api_key: Optional[str] = None):
@@ -38,7 +38,7 @@ class App:
         
         :param db_path: Path to the SQLite database file.
         """
-        db_instance.init_db(database_path=db_path)
+        db_instance.init_db(db_url=db_url)
 
         self.data_layer = Repository()
         self._vultr_api_cache = {}

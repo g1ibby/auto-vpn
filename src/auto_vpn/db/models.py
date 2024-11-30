@@ -11,7 +11,7 @@ from .db import db_instance
 
 class BaseModel(Model):
     class Meta:
-        database = db_instance.db 
+        database = db_instance.proxy 
 
 class Setting(BaseModel):
     key = CharField(unique=True)

@@ -1,6 +1,9 @@
 from peewee import (
     SqliteDatabase,
+    PostgresqlDatabase,
+    Proxy,
 )
+from urllib.parse import urlparse
 from contextlib import contextmanager
 
 class Database:
@@ -10,16 +13,35 @@ class Database:
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
             cls._instance.initialized = False
-            cls._instance.db = SqliteDatabase(None)
+            cls._instance.proxy = Proxy() 
         return cls._instance
 
-    def init_db(self, database_path: str ='data_layer.db'):
-        pragmas = {
-            'foreign_keys': 1,
-            'journal_mode': 'wal',
-            'cache_size': -1024 * 64,
-        }
-        self.db.init(database_path, pragmas=pragmas)
+    def init_db(self, db_url: str = 'sqlite:///data_layer.db'):
+        print(f"Initializing database with URL: {db_url}")
+        parsed_url = urlparse(db_url)
+        
+        if parsed_url.scheme == 'sqlite':
+            pragmas = {
+                'foreign_keys': 1,
+                'journal_mode': 'wal',
+                'cache_size': -1024 * 64,
+            }
+            path = parsed_url.path[1:] if parsed_url.path.startswith('/') else parsed_url.path
+            database = SqliteDatabase(path, pragmas=pragmas)
+        
+        elif parsed_url.scheme == 'postgresql':
+            database = PostgresqlDatabase(
+                database=parsed_url.path.lstrip('/'),
+                user=parsed_url.username,
+                password=parsed_url.password,
+                host=parsed_url.hostname,
+                port=parsed_url.port or 5432,
+            )
+        else:
+            raise ValueError("Unsupported database scheme. Use 'sqlite' or 'postgresql'.")
+
+        self.proxy.initialize(database)
+        self.db = database
         self.initialized = True
         
         from auto_vpn.db.models import BaseModel, Server, VPNPeer, Setting

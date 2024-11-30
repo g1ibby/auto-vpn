@@ -36,12 +36,15 @@ if 'app_instance' not in st.session_state:
     # Get API keys from secrets
     vultr_api_key = st.secrets.get("vultr_api_key", None)
     linode_api_key = st.secrets.get("linode_api_key", None)
+
+    database_url = os.getenv('DATABASE_URL', 'sqlite:///data_layer.db')
  
     if not any([vultr_api_key, linode_api_key]):
         st.error("⚠️ No provider API keys configured. Please set at least one provider API key in .streamlit/secrets.toml")
         st.stop()
   
     st.session_state.app_instance = App(
+        db_url=database_url,
         vultr_api_key=vultr_api_key,
         linode_api_key=linode_api_key
     )

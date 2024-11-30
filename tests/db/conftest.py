@@ -22,7 +22,8 @@ def test_db_path():
 def db_instance(test_db_path):
     """Initialize the Database instance with the test database."""
     db = Database()
-    db.init_db(database_path=test_db_path)
+    sqlite_url = f'sqlite:///{test_db_path}'
+    db.init_db(db_url=sqlite_url)
     yield db
     db.db.close()
 
