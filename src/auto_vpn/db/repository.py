@@ -17,7 +17,6 @@ class Repository:
         ip_address: str,
         username: str,
         ssh_private_key: str,
-        ssh_public_key: str,
         location: str,
         stack_state: str,
         server_type: str
@@ -31,7 +30,6 @@ class Repository:
                     ip_address=ip_address,
                     username=username,
                     ssh_private_key=ssh_private_key,
-                    ssh_public_key=ssh_public_key,
                     location=location,
                     stack_state=stack_state,
                     server_type=server_type

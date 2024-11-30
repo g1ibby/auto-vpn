@@ -1,5 +1,4 @@
 import os
-import json
 from typing import Dict, Any, Optional
 from pulumi import automation as auto
 import pulumi
@@ -16,6 +15,7 @@ class VultrManager(InfrastructureManager):
             self, 
             pulumi_config_passphrase, 
             vultr_api_key, 
+            ssh_public_key,
             project_name=None, 
             stack_state: Optional[Dict[str, Any]] = None):
         """
@@ -28,6 +28,7 @@ class VultrManager(InfrastructureManager):
         """
         self.vultr_api_key = vultr_api_key
         self._stack_state_dict = stack_state
+        self.ssh_public_key = ssh_public_key
 
         super().__init__(
                 pulumi_config_passphrase, 
@@ -39,24 +40,10 @@ class VultrManager(InfrastructureManager):
         """
         Define the Pulumi program to create a Vultr server with SSH access.
         """
-        config = pulumi.Config()
-        ssh_public_key_path = config.get("sshPublicKeyPath") or "~/.ssh/id_rsa.pub"
-
-        # Expand the path if it contains ~
-        ssh_public_key_path = os.path.expanduser(ssh_public_key_path)
-
-        # Read the SSH public key
-        try:
-            with open(ssh_public_key_path, "r") as f:
-                ssh_public_key = f.read().strip()
-        except FileNotFoundError:
-            pulumi.log.error(f"SSH public key not found at {ssh_public_key_path}. Please provide a valid path.")
-            raise FileNotFoundError(f"SSH public key not found at {ssh_public_key_path}.")
-
         # Create an SSH key resource in Vultr
         ssh_key = vultr.SSHKey(f"{self.project_name}-ssh-key",
                                name=f"{self.project_name}-ssh-key",
-                               ssh_key=ssh_public_key)
+                               ssh_key=self.ssh_public_key)
 
         # Create a Vultr instance
         server = vultr.Instance(f"{self.project_name}-vpn",

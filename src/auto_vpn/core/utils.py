@@ -6,6 +6,54 @@ import sys
 from typing import Optional
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+import paramiko
+from io import StringIO
+from typing import Union, Tuple
+from paramiko.rsakey import RSAKey
+
+def generate_ssh_keypair(bits: int = 2048) -> Tuple[RSAKey, str]:
+    """
+    Generate an SSH key pair.
+    
+    Args:
+        bits: Key size in bits (default: 2048)
+        
+    Returns:
+        Tuple containing (private_key_object, public_key_text)
+    """
+    private_key = RSAKey.generate(bits=bits)
+    public_key = f"{private_key.get_name()} {private_key.get_base64()}"
+    return private_key, public_key
+
+def serialize_private_key(private_key: RSAKey) -> str:
+    """
+    Serialize private key for database storage.
+    Only use when necessary to store in DB.
+    """
+    from io import StringIO
+    string_io = StringIO()
+    private_key.write_private_key(string_io)
+    return string_io.getvalue()
+
+def deserialize_private_key(private_key_text: str) -> RSAKey:
+    """
+    Deserialize private key from database storage.
+    Only use when retrieving from DB.
+    """
+    from io import StringIO
+    return RSAKey(file_obj=StringIO(private_key_text))
+
+def get_public_key_text(private_key: RSAKey) -> str:
+    """
+    Get public key text from private key object.
+    
+    Args:
+        private_key: RSAKey object
+        
+    Returns:
+        Public key in SSH format (ssh-rsa AAAA...)
+    """
+    return f"{private_key.get_name()} {private_key.get_base64()}"
 
 def generate_public_key(private_key_str: str) -> str:
     """

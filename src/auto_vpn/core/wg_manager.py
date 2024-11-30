@@ -1,16 +1,16 @@
 import paramiko
 import time
-import os
 import sys
 import re
 import socket
 from datetime import datetime
 from paramiko import SSHException, AuthenticationException
 from typing import Optional, Dict
+from paramiko.rsakey import RSAKey
 
 
 class WireGuardManager:
-    def __init__(self, hostname, username, ssh_key_path, max_retries=50, retry_delay=1):
+    def __init__(self, hostname, username, private_key: RSAKey, max_retries=50, retry_delay=1):
         """
         Initializes the WireGuardManager with SSH connection details and establishes the connection.
         Implements retry logic and handles host key verification.
@@ -23,7 +23,6 @@ class WireGuardManager:
         """
         self.hostname = hostname
         self.username = username
-        self.ssh_key_path = os.path.expanduser(ssh_key_path)
         self.client = paramiko.SSHClient()
         self.client.load_system_host_keys()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -36,12 +35,10 @@ class WireGuardManager:
                 self.client.connect(
                     hostname=self.hostname,
                     username=self.username,
-                    key_filename=self.ssh_key_path,
+                    pkey=private_key,
                     timeout=10
                 )
                 print("SSH connection established.")
-                # After successful connection, retrieve and save the host key
-                self.save_host_key()
                 break  # Exit the retry loop on success
             except (AuthenticationException, SSHException, socket.error) as e:
                 print(f"Connection attempt {attempt} failed: {e}")
@@ -63,28 +60,6 @@ class WireGuardManager:
             print(f"Failed to establish SFTP session: {e}")
             self.client.close()
             sys.exit(1)
-
-    def save_host_key(self):
-        """
-        Saves the server's host key to the local known_hosts file if it's a new host.
-        """
-        try:
-            host_keys = self.client.get_host_keys()
-            host_keys_path = os.path.expanduser('~/.ssh/known_hosts')
-            if not os.path.exists(os.path.dirname(host_keys_path)):
-                os.makedirs(os.path.dirname(host_keys_path))
-            host_entry = host_keys.lookup(self.hostname)
-            if host_entry:
-                for key_type, key in host_entry.items():
-                    # Paramiko formats the known_hosts entries as "hostname key_type key"
-                    entry = f"{self.hostname} {key.get_name()} {key.get_base64()}\n"
-                    with open(host_keys_path, 'a') as kh:
-                        kh.write(entry)
-                print(f"Host key for {self.hostname} added to known_hosts.")
-            else:
-                print(f"No host key found for {self.hostname}.")
-        except Exception as e:
-            print(f"Failed to save host key: {e}")
 
     def execute_command_with_responses(self, command, responses, completion_indicator=None, timeout=600):
         """

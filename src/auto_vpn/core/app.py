@@ -11,9 +11,9 @@ from auto_vpn.providers.infra_manager import InfrastructureManager
 from auto_vpn.providers.vultr_manager import VultrManager
 from auto_vpn.providers.vultr_api import VultrAPI
 from .wg_manager import WireGuardManager
-from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key
+from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key, generate_ssh_keypair, serialize_private_key, deserialize_private_key, get_public_key_text
 
-logger = setup_logger(name="auto_vpn.app")
+logger = setup_logger(name="auto_vpn.core")
 
 # Define a default Pulumi config passphrase constant
 DEFAULT_PULUMI_CONFIG_PASSPHRASE = "1"
@@ -123,8 +123,10 @@ class App:
         # Generate project name
         project_name = generate_projectname()
 
+        private_key, public_key_text = generate_ssh_keypair()
+
         # Initialize the appropriate InfrastructureManager based on provider type
-        provider_manager = self._initialize_provider_manager(provider, project_name)
+        provider_manager = self._initialize_provider_manager(provider, project_name, public_key_text)
         if not provider_manager:
             raise ValueError(f"No manager available for provider type: {provider.provider_type}")
 
@@ -136,14 +138,14 @@ class App:
         # Extract outputs from Pulumi stack
         instance_ip = up_result.outputs.get('instance_ip').value
 
+
         # Add server to the database
         server = self.data_layer.create_server(
             provider=provider,
             project_name=project_name,
             ip_address=instance_ip,
             username='root',  # Enforce 'root' as the SSH username
-            ssh_private_key="",  # Placeholder, as SSH key management is removed
-            ssh_public_key="",   # Placeholder
+            ssh_private_key=serialize_private_key(private_key),  # Placeholder, as SSH key management is removed
             location=location,
             stack_state=json.dumps(stack_state, indent=2),
             server_type=server_type,
@@ -169,7 +171,15 @@ class App:
 
         stack_state_loaded: Optional[Dict[str, Any]] = json.loads(server.stack_state)
 
-        provider_manager = self._initialize_provider_manager(server.provider, server.project_name, stack_state_loaded)
+        private_key = deserialize_private_key(server.ssh_private_key)
+        public_key_text = get_public_key_text(private_key)
+
+        provider_manager = self._initialize_provider_manager(
+                server.provider, 
+                server.project_name, 
+                public_key_text, 
+                stack_state_loaded
+        )
         if not provider_manager:
             raise ValueError(f"No manager available for provider: {server.provider}")
 
@@ -291,12 +301,14 @@ class App:
                 logger.debug(f"Skipping server {server.ip_address} - too young (age: {current_time - server_age})")
                 continue
 
+            ssh_private_key = deserialize_private_key(server.ssh_private_key)
+
             try:
                 # Initialize WireGuardManager for the server
                 wireguard_manager = WireGuardManager(
                     hostname=server.ip_address,
                     username=server.username,
-                    ssh_key_path=self.ssh_key_path,
+                    private_key=ssh_private_key,
                 )
 
                 # Get the latest handshakes for all peers on the server
@@ -360,11 +372,13 @@ class App:
         if not server:
             raise ValueError(f"Server with ID {server_id} does not exist.")
 
+        ssh_private_key = deserialize_private_key(server.ssh_private_key)
+
         # Initialize WireGuardManager for the server
         wireguard_manager = WireGuardManager(
             hostname=server.ip_address,
             username=server.username,
-            ssh_key_path='~/.ssh/id_rsa',  # Placeholder, as SSH key management is removed
+            private_key=ssh_private_key,
         )
 
         # Generate a unique peer name
@@ -398,10 +412,11 @@ class App:
             raise ValueError(f"VPN Peer with ID {peer_id} does not exist.")
 
         server = peer.server
+        ssh_private_key = deserialize_private_key(server.ssh_private_key)
         wireguard_manager = WireGuardManager(
             hostname=server.ip_address,
             username='root',
-            ssh_key_path='~/.ssh/id_rsa',
+            private_key=ssh_private_key
         )
 
         # Remove the VPN peer
@@ -442,7 +457,7 @@ class App:
 
     # ----------------- Utility Methods ----------------- #
 
-    def _initialize_provider_manager(self, provider: str, project_name: str, stack_state: Optional[Dict[str, Any]] = None) -> Optional[InfrastructureManager]:
+    def _initialize_provider_manager(self, provider: str, project_name: str, ssh_public_key: str, stack_state: Optional[Dict[str, Any]] = None) -> Optional[InfrastructureManager]:
         """
         Initialize the InfrastructureManager for a given provider.
         :param provider: Provider type ('vultr' or 'linode')
@@ -454,6 +469,7 @@ class App:
             return VultrManager(
                 pulumi_config_passphrase=DEFAULT_PULUMI_CONFIG_PASSPHRASE,
                 vultr_api_key=self.provider_credentials['vultr'],
+                ssh_public_key=ssh_public_key,
                 project_name=project_name,
                 stack_state=stack_state
             )

@@ -24,7 +24,6 @@ class Server(BaseModel):
     ip_address = CharField(unique=True)
     username = CharField()
     ssh_private_key = TextField()
-    ssh_public_key = TextField()
     location = CharField()
     stack_state = TextField()
     server_type = CharField()
