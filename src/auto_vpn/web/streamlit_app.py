@@ -2,6 +2,8 @@ from datetime import timedelta
 import streamlit as st
 import atexit
 import yaml
+import os
+import requests
 from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
 from auto_vpn.core.app import App
@@ -247,6 +249,27 @@ def main():
         st.session_state.periodic_task = periodic_task
         periodic_task.start()
 
+    # Add self-ping task if SELF_URL is configured
+    self_url = os.getenv('SELF_URL')
+    if self_url and ('periodic_task_ping' not in st.session_state or 
+                     not st.session_state.periodic_task_ping.running):
+        def ping_self():
+            try:
+                response = requests.get(self_url, timeout=10)
+                print(f"Self-ping to {self_url} completed with status {response.status_code}")
+                return response.status_code
+            except Exception as e:
+                print(f"Self-ping failed: {str(e)}")
+                return None
+
+        periodic_task_ping = PeriodicTask(
+            interval_seconds=60 * 10,
+            task_function=ping_self,
+        )
+        st.session_state.periodic_task_ping = periodic_task_ping
+        periodic_task_ping.start()
+        print(f"Started self-ping task to {self_url}")
+
     st.title("🌍 VPN Peer Manager")
 
     # Display status in sidebar
@@ -305,6 +328,9 @@ def cleanup():
     """Cleanup function to stop periodic task"""
     if 'periodic_task' in st.session_state:
         st.session_state.periodic_task.stop()
+    if 'periodic_task_ping' in st.session_state:
+        st.session_state.periodic_task_ping.stop()
+        print("Stopped self-ping task")
 
 # Register cleanup handler
 atexit.register(cleanup)
