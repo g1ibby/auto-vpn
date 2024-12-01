@@ -14,9 +14,15 @@ class Settings(BaseSettings):
         default=None,
         description="Optional self URL for the application"
     )
-    VULTR_API_KEY: str = Field(..., description="API key for Vultr services")
+    VULTR_API_KEY: Optional[str] = Field(
+        default=None, 
+        description="API key for Vultr services"
+    )
+    LINODE_API_KEY: Optional[str] = Field(
+        default=None,
+        description="API key for Linode services"
+    )
 
-    # Validator for DATABASE_URL format
     @validator('DATABASE_URL')
     def validate_database_url(cls, v):
         try:
@@ -27,7 +33,6 @@ class Settings(BaseSettings):
         except Exception as e:
             raise ValueError(f"Invalid database URL format: {str(e)}")
 
-    # Optional validator for SELF_URL if it's provided
     @validator('SELF_URL')
     def validate_self_url(cls, v):
         if v is not None:
@@ -39,6 +44,11 @@ class Settings(BaseSettings):
             except Exception as e:
                 raise ValueError(f"Invalid SELF_URL format: {str(e)}")
         return v
+
+    def validate_api_keys(self):
+        """Validate that at least one provider API key is configured"""
+        if not any([self.VULTR_API_KEY, self.LINODE_API_KEY]):
+            raise ValueError("At least one provider API key must be configured")
 
     class Config:
         env_file = ".env"

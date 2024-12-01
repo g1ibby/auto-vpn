@@ -2,7 +2,7 @@
 
 # Change this command
 run:
-	streamlit run src/auto_vpn/web/streamlit_app.py
+	streamlit run src/auto_vpn/web/web.py
 
 run-debug:
 	streamlit run src/auto_vpn/web/streamlit_app.py --logger.level=debug
