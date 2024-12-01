@@ -1,32 +1,87 @@
 from datetime import timedelta
 import streamlit as st
 import atexit
-import yaml
 import os
 import requests
-from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
+from pydantic import ValidationError
 from auto_vpn.core.app import App
 from auto_vpn.core.periodic_task import PeriodicTask
 from auto_vpn.core.vpn_monitor import VPNMonitor, VPNStateManager
+from auto_vpn.core.utils import setup_logger
+from auto_vpn.core.settings import Settings
 
-# Load config file
-config = yaml.load(st.secrets['authentication']['credentials'], Loader=SafeLoader)
+logger = setup_logger(name="web")
 
-st.set_page_config(
-    page_title="VPN Peer Manager",
-    page_icon="🔒",
-    layout="wide"
-)
+class AuthConfig:
+    """Authentication configuration management"""
+    COOKIE_NAME = 'vpn_auth_cookie'
+    COOKIE_KEY = 'signature_key'
+    COOKIE_EXPIRY_DAYS = 30
+    
+    @staticmethod
+    def get_credentials(settings: Settings) -> dict:
+        """
+        Generate credentials configuration using settings
+        
+        Args:
+            settings: Application settings containing USERNAME and PASSWORD
+            
+        Returns:
+            Dict with credential configuration
+        """
+        return {
+            "credentials": {
+                "usernames": {
+                    settings.USERNAME: {
+                        "email": "admin@example.com",  # Can be hardcoded or added to Settings
+                        "failed_login_attempts": 0,
+                        "first_name": "Admin",
+                        "last_name": "User",
+                        "logged_in": False,
+                        "password": settings.PASSWORD,
+                        "roles": ["admin"]
+                    }
+                }
+            },
+            "cookie": {
+                "expiry_days": AuthConfig.COOKIE_EXPIRY_DAYS,
+                "key": AuthConfig.COOKIE_KEY,
+                "name": AuthConfig.COOKIE_NAME
+            }
+        }
 
-# Create an authentication object
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    auto_hash=True
-)
+
+def init_settings() -> Settings:
+    """Initialize application settings"""
+    try:
+        return Settings()
+    except ValidationError as e:
+        logger.error("Configuration Error: Missing or invalid environment variables")
+        for error in e.errors():
+            field = error["loc"][0]
+            message = error["msg"]
+            logger.error(f"{field}: {message}")
+        os._exit(1)
+
+def init_auth(settings: Settings) -> stauth.Authenticate:
+    """
+    Initialize authentication
+    
+    Args:
+        settings: Application settings
+        
+    Returns:
+        Configured Authenticate instance
+    """
+    config = AuthConfig.get_credentials(settings)
+    return stauth.Authenticate(
+        credentials=config["credentials"],
+        cookie_name=config["cookie"]["name"],
+        key=config["cookie"]["key"],
+        cookie_expiry_days=config["cookie"]["expiry_days"],
+        auto_hash=True
+    )
 
 # Initialize state manager
 vpn_state_manager = VPNStateManager()
@@ -217,6 +272,16 @@ def display_status_sidebar():
             st.sidebar.error(f"Last check error: {status['error']}")
 
 def main():
+    st.set_page_config(
+        page_title="VPN Manager",
+        page_icon="🔒",
+        layout="wide"
+    )
+
+    settings = init_settings()
+    # Initialize authentication
+    authenticator = init_auth(settings)
+
     # Authentication
     try:
         authenticator.login(location='main', key='Login')
@@ -259,10 +324,10 @@ def main():
         def ping_self():
             try:
                 response = requests.get(self_url, timeout=10)
-                print(f"Self-ping to {self_url} completed with status {response.status_code}")
+                logger.info(f"Self-ping to {self_url} completed with status {response.status_code}")
                 return response.status_code
             except Exception as e:
-                print(f"Self-ping failed: {str(e)}")
+                logger.warn(f"Self-ping failed: {str(e)}")
                 return None
 
         periodic_task_ping = PeriodicTask(
@@ -271,9 +336,9 @@ def main():
         )
         st.session_state.periodic_task_ping = periodic_task_ping
         periodic_task_ping.start()
-        print(f"Started self-ping task to {self_url}")
+        logger.info(f"Started self-ping task to {self_url}")
 
-    st.title("🌍 VPN Peer Manager")
+    st.title("🌍 VPN Manager")
 
     # Display status in sidebar
     display_status_sidebar()
@@ -299,7 +364,7 @@ def main():
     # Display existing peers
     st.subheader("Existing VPN Peers")
     refresh_peers()
-    
+ 
     if not st.session_state.vpn_peers:
         st.info("No VPN peers available. Create one above!")
     else:
@@ -333,7 +398,6 @@ def cleanup():
         st.session_state.periodic_task.stop()
     if 'periodic_task_ping' in st.session_state:
         st.session_state.periodic_task_ping.stop()
-        print("Stopped self-ping task")
 
 # Register cleanup handler
 atexit.register(cleanup)
