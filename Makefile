@@ -1,4 +1,4 @@
-.PHONY: install test lint format clean run run-debug docker-build docker-run docker-run-debug
+.PHONY: install test lint format clean run run-debug docker-build docker-run
 
 # Change this command
 run:
@@ -14,13 +14,7 @@ docker-build:
 docker-run:
 	docker run -p 8501:8501 \
 		--name auto-vpn \
-		-v $(PWD)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro \
 		auto-vpn
-
-docker-run-debug:
-	docker run -p 8501:8501 \
-		--name auto-vpn \
-		auto-vpn run-debug
 
 docker-stop:
 	docker stop auto-vpn && docker rm auto-vpn

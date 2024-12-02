@@ -127,9 +127,8 @@ class VPNApplication:
         """Render the main interface for authenticated users"""
         with st.sidebar:
             self.auth_manager.authenticator.logout()
-            st.write(f'Welcome *{st.session_state["name"]}*')
             st.divider()
-            self._render_status_sidebar()
+            self._render_threshold_settings()
 
         st.title("🌍 VPN Manager")
         
@@ -200,21 +199,6 @@ class VPNApplication:
             except Exception as e:
                 st.error(f"Error deleting peer: {str(e)}")
     
-    def _render_status_sidebar(self):
-        """Render the status sidebar with monitoring info and settings"""
-        st.sidebar.subheader("VPN Status")
-        self._render_monitoring_status()
-        self._render_threshold_settings()
-        self._render_vpn_metrics()
-
-    def _render_monitoring_status(self):
-        """Display monitoring status indicator"""
-        if ('periodic_task' in st.session_state and 
-            st.session_state.periodic_task.running):
-            st.sidebar.success("Monitoring: Active")
-        else:
-            st.sidebar.error("Monitoring: Inactive")
-
     def _get_current_threshold_info(self):
         """Get current threshold information"""
         current_threshold = st.session_state.app_instance.get_inactivity_threshold()
@@ -287,24 +271,6 @@ class VPNApplication:
         if 'threshold_changed' in st.session_state and st.session_state.threshold_changed:
             del st.session_state.threshold_changed
             st.rerun()
-
-    def _render_vpn_metrics(self):
-        """Render VPN metrics and status"""
-        st.sidebar.divider()
-        
-        status, last_check_time = self.vpn_state_manager.get_status()
-
-        if last_check_time:
-            st.sidebar.info(
-                f"Last check: {last_check_time.strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-
-        if status:
-            st.sidebar.metric("Active Peers", status.get('active_peers', 0))
-            st.sidebar.metric("Active Servers", status.get('server_count', 0))
-
-            if 'error' in status:
-                st.sidebar.error(f"Last check error: {status['error']}") 
 
     def _render_vpn_creation(self):
         """Render the VPN creation section"""

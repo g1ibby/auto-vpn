@@ -83,5 +83,4 @@ ENV STREAMLIT_SERVER_PORT=8501
 # Expose Streamlit port
 EXPOSE 8501
 
-# Set entrypoint to the script (after tini)
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["streamlit", "run", "auto_vpn/web/web.py"]
