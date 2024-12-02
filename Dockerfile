@@ -64,10 +64,6 @@ COPY Makefile ./
 # Create .streamlit directory and copy config
 COPY .streamlit/config.toml /app/.streamlit/config.toml
 
-# Copy the entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
