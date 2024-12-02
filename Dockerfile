@@ -28,7 +28,8 @@ RUN poetry config virtualenvs.create false
 FROM builder as pulumi-installer
 
 # Install Pulumi
-RUN curl -fsSL https://get.pulumi.com | sh
+ENV PULUMI_VERSION=3.142.0
+RUN curl -fsSL https://get.pulumi.com | sh -s -- --version $PULUMI_VERSION
 
 # Stage 3: Final stage
 FROM python:3.12-slim
