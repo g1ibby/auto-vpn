@@ -80,17 +80,18 @@ class VultrAPI:
         Returns:
             list: A list of dictionaries with region 'id', 'city', 'country_code', and 'country' for regions where the plan is available.
         """
-        regions_with_plan = []
+        # Measure time for fetching regions
         regions = self.get_vultr_regions()
 
+        regions_with_plan = []
         for region in regions:
             region_id = region["id"]
             available_plans = self.get_available_plans_for_region(region_id)
 
             if plan_id in available_plans:
                 country_code = region["country"]
-                country_name = self.get_country_name(country_code)
 
+                country_name = self.get_country_name(country_code)
                 regions_with_plan.append({
                     "id": region["id"],
                     "city": region["city"],
@@ -127,14 +128,11 @@ if __name__ == "__main__":
     # Create an instance of VultrAPI and test the functionality
     vultr_api = VultrAPI(API_KEY)
 
-    # Find regions with the 'vc2-1c-1gb' plan available
     regions_with_specific_plan = vultr_api.get_regions_with_plan("vc2-1c-1gb")
-    print("Regions with vc2-1c-1gb available:", regions_with_specific_plan)
 
-    # Search for regions by city or country name
+    # Measure time for searching regions by city or country name
     search_result = vultr_api.search("Tokyo", "vc2-1c-1gb")
-    print("Search results for 'Tokyo':", search_result)
+    print(f"Search results for 'Tokyo': {search_result}")
 
     search_result = vultr_api.search("us", "vc2-1c-1gb")
-    print("Search results for 'us':", search_result)
-
+    print(f"Search results for 'us': {search_result}")

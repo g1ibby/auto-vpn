@@ -6,10 +6,9 @@ import sys
 from typing import Optional
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives import serialization
-import paramiko
-from io import StringIO
-from typing import Union, Tuple
+from typing import Tuple
 from paramiko.rsakey import RSAKey
+from .settings import Settings
 
 def generate_ssh_keypair(bits: int = 2048) -> Tuple[RSAKey, str]:
     """
@@ -118,7 +117,7 @@ def generate_peername(projectname):
 
 def setup_logger(
     name: str = "auto_vpn",
-    log_level: int = logging.DEBUG,
+    log_level: Optional[int] = None,
     log_format: Optional[str] = None
 ) -> logging.Logger:
     """
@@ -132,6 +131,12 @@ def setup_logger(
     Returns:
         Configured logger instance
     """
+    settings = Settings()
+    
+    # Use log level from settings if not explicitly provided
+    if log_level is None:
+        log_level = settings.get_log_level()
+
     # Create logger
     logger = logging.getLogger(name)
     logger.setLevel(log_level)

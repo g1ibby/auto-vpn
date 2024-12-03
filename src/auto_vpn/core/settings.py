@@ -2,8 +2,13 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field, validator
 from urllib.parse import urlparse
+import logging
 
 class Settings(BaseSettings):
+    LOG_LEVEL: str = Field(
+        default="INFO",
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
     USERNAME: str = Field(..., description="Username for authentication")
     PASSWORD: str = Field(..., description="Password for authentication")
     DATABASE_URL: str = Field(
@@ -22,6 +27,18 @@ class Settings(BaseSettings):
         default=None,
         description="API key for Linode services"
     )
+
+    @validator('LOG_LEVEL')
+    def validate_log_level(cls, v):
+        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        v = v.upper()
+        if v not in valid_levels:
+            raise ValueError(f"Invalid log level. Must be one of: {', '.join(valid_levels)}")
+        return v
+
+    def get_log_level(self) -> int:
+        """Convert string log level to logging constant"""
+        return getattr(logging, self.LOG_LEVEL)
 
     @validator('DATABASE_URL')
     def validate_database_url(cls, v):

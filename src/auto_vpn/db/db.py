@@ -5,6 +5,9 @@ from peewee import (
 )
 from urllib.parse import urlparse
 from contextlib import contextmanager
+from auto_vpn.core.utils import setup_logger
+
+logger = setup_logger(name="auto_vpn.db")
 
 class Database:
     _instance = None
@@ -17,7 +20,7 @@ class Database:
         return cls._instance
 
     def init_db(self, db_url: str = 'sqlite:///data_layer.db'):
-        print(f"Initializing database with URL: {db_url}")
+        logger.info(f"Initializing database with URL: {db_url}")
         parsed_url = urlparse(db_url)
         
         if parsed_url.scheme == 'sqlite':

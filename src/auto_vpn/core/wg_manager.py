@@ -7,6 +7,9 @@ from datetime import datetime
 from paramiko import SSHException, AuthenticationException
 from typing import Optional, Dict
 from paramiko.rsakey import RSAKey
+from .utils import setup_logger
+
+logger = setup_logger(name="auto_vpn.core")
 
 
 class WireGuardManager:
@@ -31,33 +34,33 @@ class WireGuardManager:
         # Attempt to connect with retry logic
         for attempt in range(1, max_retries + 1):
             try:
-                print(f"Attempting to connect to {self.hostname} (Attempt {attempt}/{max_retries})...")
+                logger.debug(f"Attempting to connect to {self.hostname} (Attempt {attempt}/{max_retries})...")
                 self.client.connect(
                     hostname=self.hostname,
                     username=self.username,
                     pkey=private_key,
                     timeout=10
                 )
-                print("SSH connection established.")
-                break  # Exit the retry loop on success
+                logger.info("SSH connection established.")
+                break
             except (AuthenticationException, SSHException, socket.error) as e:
-                print(f"Connection attempt {attempt} failed: {e}")
+                logger.debug(f"Connection attempt {attempt} failed: {e}")
                 if attempt < max_retries:
-                    print(f"Retrying in {retry_delay} second(s)...")
+                    logger.debug(f"Retrying in {retry_delay} second(s)...")
                     time.sleep(retry_delay)
                 else:
-                    print("Maximum connection attempts reached. Exiting.")
+                    logger.warn("Maximum connection attempts reached. Exiting.")
                     sys.exit(1)
             except Exception as e:
-                print(f"An unexpected error occurred: {e}")
+                logger.warn(f"An unexpected error occurred: {e}")
                 sys.exit(1)
 
         # Open SFTP client
         try:
             self.sftp = self.client.open_sftp()
-            print("SFTP session established.")
+            logger.info("SFTP session established.")
         except SSHException as e:
-            print(f"Failed to establish SFTP session: {e}")
+            logger.warn(f"Failed to establish SFTP session: {e}")
             self.client.close()
             sys.exit(1)
 
@@ -78,11 +81,11 @@ class WireGuardManager:
             # Clear any initial data
             if shell.recv_ready():
                 initial_output = shell.recv(65535).decode('utf-8', errors='ignore')
-                print(initial_output)
+                logger.debug(initial_output)
 
             # Send the command
             shell.send(command + '\n')
-            print(f"Executing command: {command}")
+            logger.debug(f"Executing command: {command}")
 
             buffer = ''
             response_index = 0
@@ -92,13 +95,13 @@ class WireGuardManager:
                 if shell.recv_ready():
                     recv = shell.recv(1024).decode('utf-8', errors='ignore')
                     buffer += recv
-                    print(recv, end='')  # Optional: print server output
+                    logger.debug(recv, end='')
 
                     # Check for each prompt and send response
                     if response_index < len(responses):
                         prompt_pattern, response = responses[response_index]
                         if re.search(prompt_pattern, buffer, re.IGNORECASE | re.MULTILINE):
-                            print(f"\nDetected prompt: '{prompt_pattern.strip()}', sending response: '{response.strip()}'")
+                            logger.debug(f"\nDetected prompt: '{prompt_pattern.strip()}', sending response: '{response.strip()}'")
                             shell.send(response)
                             response_index += 1
                             # Clear buffer to prevent re-matching
@@ -106,18 +109,18 @@ class WireGuardManager:
 
                 # Check for completion indicator
                 if completion_indicator and completion_indicator in buffer:
-                    print(f"\nDetected completion indicator: '{completion_indicator}'")
+                    logger.debug(f"\nDetected completion indicator: '{completion_indicator}'")
                     break
 
                 # Check for timeout
                 if time.time() - start_time > timeout:
-                    print("\nCommand execution timed out.")
+                    logger.debug("\nCommand execution timed out.")
                     break
 
                 time.sleep(0.5)
 
         except Exception as e:
-            print(f"Error during command execution: {e}")
+            logger.warn(f"Error during command execution: {e}")
 
     def list_clients(self):
         """
@@ -135,21 +138,8 @@ class WireGuardManager:
             return clients
 
         except IOError:
-            print("WireGuard configuration file not found.")
+            logger.warn("WireGuard configuration file not found.")
             return []
-
-    def show_clients(self):
-        """
-        Retrieves and displays the list of existing WireGuard clients.
-        """
-        clients = self.list_clients()
-        if not clients:
-            print("No existing clients found.")
-        else:
-            print("\n=== Existing WireGuard Clients ===")
-            for idx, client in enumerate(clients, start=1):
-                print(f"{idx}) {client}")
-            print("=== End of Clients List ===\n")
 
     def add_client(self, client_name) -> tuple[str, str]:
         """
@@ -171,7 +161,7 @@ class WireGuardManager:
             wg_conf_exists = False
 
         if not wg_conf_exists:
-            print("WireGuard is not installed. Proceeding with installation.")
+            logger.info("WireGuard is not installed. Proceeding with installation.")
             # Define the responses for installation
             responses = [
                 (r'Port \[51820\]:\s*$', '\n'),                         # Accept default port
@@ -193,11 +183,11 @@ class WireGuardManager:
 
             # Retrieve and display client.conf
             client_conf_path = f'/root/{client_name}.conf'
-            config_str = self.retrieve_and_display_conf(client_conf_path)
+            config_str = self.retrieve_conf(client_conf_path)
             private_key = extract_private_key(config_str)
             return config_str, private_key
         else:
-            print("WireGuard is already installed. Proceeding to add a new client.")
+            logger.info("WireGuard is already installed. Proceeding to add a new client.")
             # Define the responses for adding a new client
             responses = [
                 (r'Option:\s*$', '1\n'),                                # Select option 1 to add a new client
@@ -219,7 +209,7 @@ class WireGuardManager:
 
             # Retrieve and display the new client.conf
             client_conf_path = f'/root/{client_name}.conf'
-            config_str = self.retrieve_and_display_conf(client_conf_path)
+            config_str = self.retrieve_conf(client_conf_path)
             private_key = extract_private_key(config_str)
             return config_str, private_key
 
@@ -233,11 +223,11 @@ class WireGuardManager:
         # First, list existing clients
         clients = self.list_clients()
         if not clients:
-            print("No clients available to remove.")
+            logger.warn("No clients available to remove.")
             return
 
         if client_name not in clients:
-            print(f"Client '{client_name}' does not exist.")
+            logger.warn(f"Client '{client_name}' does not exist.")
             return
 
         # Determine the client's number
@@ -262,29 +252,20 @@ class WireGuardManager:
             timeout=600  # 10 minutes
         )
 
-    def retrieve_and_display_conf(self, client_conf_path):
+    def retrieve_conf(self, client_conf_path) -> str:
         """
-        Retrieves the client configuration file and displays its content.
+        Retrieves the client configuration file.
 
         :param client_conf_path: The path to the client.conf file on the server.
-        :return: None
+        :return: str
         """
         try:
-            print(f"Retrieving {client_conf_path}...")
+            logger.debug(f"Retrieving {client_conf_path}...")
             with self.sftp.open(client_conf_path, 'r') as f:
                 client_conf = f.read().decode('utf-8')
-                print("\n=== client.conf Content ===\n")
-                print(client_conf)
-                print("\n=== End of client.conf ===\n")
                 return client_conf
         except IOError:
-            print(f"Error: {client_conf_path} not found.")
-
-    def list_clients_menu(self):
-        """
-        Displays the list of existing WireGuard clients.
-        """
-        self.show_clients()
+            logger.warn(f"Error: {client_conf_path} not found.")
 
     def get_latest_handshakes(self) -> Dict[str, Optional[datetime]]:
         """
@@ -299,7 +280,7 @@ class WireGuardManager:
             output = stdout.read().decode('utf-8')
             error = stderr.read().decode('utf-8')
             if error:
-                print(f"Error executing command: {error}")
+                logger.warn(f"Error executing command: {error}")
                 return {}
 
             handshakes = {}
@@ -322,7 +303,7 @@ class WireGuardManager:
             return handshakes
 
         except Exception as e:
-            print(f"Failed to retrieve latest handshakes: {e}")
+            logger.warn(f"Failed to retrieve latest handshakes: {e}")
             return {}
 
     def close(self):
@@ -331,9 +312,9 @@ class WireGuardManager:
         """
         if self.sftp:
             self.sftp.close()
-            print("SFTP session closed.")
+            logger.info("SFTP session closed.")
         self.client.close()
-        print("SSH connection closed.")
+        logger.info("SSH connection closed.")
 
 def extract_private_key(config: str) -> str:
     """
@@ -350,68 +331,3 @@ def extract_private_key(config: str) -> str:
     if match:
         return match.group(1)
     return ""
-
-def main():
-    # Server and SSH details
-    hostname = '95.179.164.49'
-    username = 'root'
-    ssh_key_path = '~/.ssh/id_rsa'  # Path to your private SSH key
-
-    # Initialize the WireGuardManager
-    wg_manager = WireGuardManager(hostname, username, ssh_key_path)
-
-    try:
-        while True:
-            print("\n=== WireGuard Manager ===")
-            print("1) Install WireGuard / Add Client")
-            print("2) Remove an Existing Client")
-            print("3) List Existing Clients")
-            print("4) Show Latest Handshakes")  # New Menu Option
-            print("5) Exit")
-            choice = input("Select an option: ").strip()
-
-            if choice == '1':
-                # Add a New Client
-                client_name = input("Enter the name for the new client: ").strip()
-                if client_name:
-                    wg_manager.add_client(client_name)
-                else:
-                    print("Client name cannot be empty.")
-            elif choice == '2':
-                # Remove an Existing Client
-                client_name = input("Enter the name of the client to remove: ").strip()
-                if client_name:
-                    wg_manager.remove_client(client_name)
-                else:
-                    print("Client name cannot be empty.")
-            elif choice == '3':
-                # List Existing Clients
-                wg_manager.list_clients_menu()
-            elif choice == '4':
-                # Show Latest Handshakes
-                handshakes = wg_manager.get_latest_handshakes()
-                if not handshakes:
-                    print("No handshake data available.")
-                else:
-                    print("\n=== Latest Handshakes ===")
-                    for public_key, handshake_time in handshakes.items():
-                        if handshake_time:
-                            print(f"Peer Public Key: {public_key}")
-                            print(f"Latest Handshake: {handshake_time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-                        else:
-                            print(f"Peer Public Key: {public_key}")
-                            print("Latest Handshake: Never\n")
-                    print("=== End of Handshakes ===\n")
-            elif choice == '5':
-                print("Exiting WireGuard Manager.")
-                break
-            else:
-                print("Invalid option. Please select a valid number (1-4).")
-
-    finally:
-        wg_manager.close()
-
-
-if __name__ == "__main__":
-    main()
-

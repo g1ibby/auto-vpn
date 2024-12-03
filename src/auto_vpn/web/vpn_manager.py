@@ -11,7 +11,6 @@ class VPNManager:
     
     def get_available_locations(self) -> List[str]:
         """Get available VPN locations"""
-        # Move the cache decorator to a static method inside
         @st.cache_data(ttl=3600)
         def _fetch_locations(provider_credentials):
             available_providers = [

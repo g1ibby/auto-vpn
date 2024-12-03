@@ -198,7 +198,7 @@ class App:
             try:
                 self.delete_server(server.id)
             except Exception as e:
-                print(f"Error deleting server {server}: {e}")
+                logger.warn(f"Error deleting server {server}: {e}")
 
     # ----------------- VPN Peer Methods ----------------- #
 
@@ -248,16 +248,16 @@ class App:
             # No server in the desired region, create one
             try:
                 server = self.create_server(provider=provider, location=region_id)
-                print(f"Created server in region {region_name} - {region_id} with IP {server.ip_address}")
+                logger.info(f"Created server in region {region_name} - {region_id} with IP {server.ip_address}")
             except Exception as e:
                 raise ValueError(f"Error creating server: {e}")
         else:
-            print(f"Using existing server in region {region_name} with IP {server.ip_address}")
+            logger.info(f"Using existing server in region {region_name} with IP {server.ip_address}")
 
         # Create a VPN peer on the server
         try:
             vpn_peer = self.add_vpn_peer(server_id=server.id)
-            print(f"Added VPN peer: {vpn_peer.peer_name}")
+            logger.info(f"Added VPN peer: {vpn_peer.peer_name}")
         except Exception as e:
             raise ValueError(f"Error adding VPN peer: {e}")
 
@@ -440,7 +440,7 @@ class App:
             try:
                 self.delete_vpn_peer(peer.id)
             except Exception as e:
-                print(f"Error deleting VPN peer {peer.peer_name}: {e}")
+                logger.warn(f"Error deleting VPN peer {peer.peer_name}: {e}")
 
     def get_peer_config(self, peer_name: str) -> str:
         """

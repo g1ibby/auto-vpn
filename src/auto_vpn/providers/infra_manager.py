@@ -7,7 +7,9 @@ from abc import ABC, abstractmethod
 import tempfile
 from pathlib import Path
 from pulumi import automation as auto
+from auto_vpn.core.utils import setup_logger
 
+logger = setup_logger(name="providers.infra_manager")
 
 class InfrastructureManager(ABC):
     """
@@ -74,7 +76,7 @@ class InfrastructureManager(ABC):
                 workspace=self.workspace
             )
         except Exception as e:
-            print(f"Stack creation/selection error: {e}")
+            logger.warn(f"Stack creation/selection error: {e}")
             raise
 
     def export_stack_state(self) -> Dict[str, Any]:
@@ -143,7 +145,7 @@ class InfrastructureManager(ABC):
 
         # Then import the deployment
         self.stack.import_stack(deployment)
-        print(f"Successfully restored stack '{self.stack_name}' with imported state")
+        logger.info(f"Successfully restored stack '{self.stack_name}' with imported state")
 
     @staticmethod
     def get_system_arch():
@@ -220,16 +222,14 @@ class InfrastructureManager(ABC):
 
     def install_plugins(self):
         """Install all required plugins from local files."""
-        print("Installing required plugins...")
         for provider, version in self.required_plugins().items():
             try:
                 self.install_local_plugin(provider, version)
-                print(f"Installed plugin: {provider} v{version}")
             except Exception as e:
-                print(f"Error installing plugin {provider} v{version}: {e}")
+                logger.warn(f"Error installing plugin {provider} v{version}: {e}")
                 raise
 
-        print("All required plugins are installed.")
+        logger.info("All required plugins are installed.")
 
     def install_local_plugin(self, provider: str, version: str):
         """Install plugin from local archive."""
@@ -254,7 +254,7 @@ class InfrastructureManager(ABC):
         with tarfile.open(plugin_path, "r:gz") as tar:
             tar.extractall(path=plugin_dir)
 
-        print(f"Successfully installed {provider} plugin v{version} from {plugin_path}")
+        logger.info(f"Successfully installed {provider} plugin v{version} from {plugin_path}")
 
 
     def up(self, location: str, server_type: str):
@@ -267,33 +267,23 @@ class InfrastructureManager(ABC):
         self.server_type = server_type
 
         self.set_stack_config()
-        print("Refreshing the stack to get the latest state...")
-        self.stack.refresh(on_output=print)
-        print("Refreshing complete.")
+        logger.info("Refreshing the stack to get the latest state...")
+        self.stack.refresh()
+        logger.info("Refreshing complete.")
 
-        print("Updating the stack...")
-        up_result = self.stack.up(on_output=print)
-        print("Stack update complete.")
+        logger.info("Updating the stack...")
+        up_result = self.stack.up()
+        logger.info("Stack update complete.")
         return up_result
 
     def destroy(self):
         """
         Destroy the Pulumi stack and remove it from the workspace.
         """
-        print("Destroying the stack...")
-        self.stack.destroy(on_output=print)
-        print("Stack destroyed.")
+        logger.info("Destroying the stack...")
+        self.stack.destroy()
+        logger.info("Stack destroyed.")
 
-        print(f"Removing stack '{self.stack_name}' from the workspace...")
+        logger.info(f"Removing stack '{self.stack_name}' from the workspace...")
         self.stack.workspace.remove_stack(self.stack_name)
-        print(f"Stack '{self.stack_name}' removed.")
-
-    @abstractmethod
-    def get_outputs(self, up_result):
-        """
-        Retrieve and process the outputs from the stack update.
-
-        :param up_result: The result object from stack.up().
-        :return: Processed outputs.
-        """
-        pass
+        logger.info(f"Stack '{self.stack_name}' removed.")
