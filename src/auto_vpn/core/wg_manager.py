@@ -9,7 +9,7 @@ from typing import Optional, Dict
 from paramiko.rsakey import RSAKey
 from .utils import setup_logger
 
-logger = setup_logger(name="auto_vpn.core")
+logger = setup_logger(name="core.wg_manager")
 
 
 class WireGuardManager:

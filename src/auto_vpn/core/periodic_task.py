@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Callable, Optional
 from .utils import setup_logger
 
-logger = setup_logger(name="auto_vpn.periodic_task")
+logger = setup_logger(name="core.periodic_task")
 
 class PeriodicTask:
     def __init__(self, interval_seconds: int, task_function: Callable):

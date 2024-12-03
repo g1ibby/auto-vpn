@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from contextlib import contextmanager
 from auto_vpn.core.utils import setup_logger
 
-logger = setup_logger(name="auto_vpn.db")
+logger = setup_logger(name="db.db")
 
 class Database:
     _instance = None

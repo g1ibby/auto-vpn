@@ -13,7 +13,7 @@ from auto_vpn.providers.vultr_api import VultrAPI
 from .wg_manager import WireGuardManager
 from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key, generate_ssh_keypair, serialize_private_key, deserialize_private_key, get_public_key_text
 
-logger = setup_logger(name="auto_vpn.core")
+logger = setup_logger(name="core.app")
 
 # Define a default Pulumi config passphrase constant
 DEFAULT_PULUMI_CONFIG_PASSPHRASE = "1"

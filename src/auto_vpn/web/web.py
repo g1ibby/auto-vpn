@@ -3,7 +3,6 @@ import os
 import atexit
 from datetime import timedelta
 import requests
-from typing import Optional
 from auto_vpn.core.app import App
 from auto_vpn.core.periodic_task import PeriodicTask
 from auto_vpn.core.vpn_monitor import VPNMonitor, VPNStateManager
@@ -12,7 +11,7 @@ from auto_vpn.core.settings import Settings
 from auto_vpn.web.auth_manager import AuthManager
 from auto_vpn.web.vpn_manager import VPNManager
 
-logger = setup_logger(name="web")
+logger = setup_logger(name="web.web")
 
 class VPNApplication:
     """Main application class"""

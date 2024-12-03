@@ -4,7 +4,7 @@ import threading
 from .app import App
 from .utils import setup_logger
 
-logger = setup_logger(name="auto_vpn.monitor")
+logger = setup_logger(name="core.vpn_monitor")
 
 class VPNStateManager:
     _instance = None
