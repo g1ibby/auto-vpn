@@ -241,7 +241,7 @@ class VPNApplication:
 
     def _render_custom_threshold_input(self, current_minutes: int):
         """Render custom threshold input"""
-        st.sidebar.write("Or set custom time:")
+        st.sidebar.write("Or set custom period:")
         
         if 'custom_minutes' not in st.session_state:
             st.session_state.custom_minutes = current_minutes
@@ -252,7 +252,7 @@ class VPNApplication:
             max_value=1440,  # 24 hours
             step=5,
             key="custom_minutes",
-            help="Set custom inactivity threshold (1-1440 minutes)",
+            help="Set custom period (1-1440 minutes)",
             on_change=self._handle_custom_threshold_change,
             label_visibility="collapsed"
         )
@@ -260,7 +260,7 @@ class VPNApplication:
     def _render_threshold_settings(self):
         """Render threshold settings section"""
         st.sidebar.subheader("Settings")
-        st.sidebar.write("Inactivity threshold:")
+        st.sidebar.write("Inactive VPN peers are automatically deleted after:")
         
         _, current_minutes, current_label = self._get_current_threshold_info()
         
