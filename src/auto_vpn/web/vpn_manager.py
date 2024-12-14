@@ -12,22 +12,12 @@ class VPNManager:
     def get_available_locations(self) -> List[str]:
         """Get available VPN locations"""
         @st.cache_data(ttl=3600)
-        def _fetch_locations(provider_credentials):
-            available_providers = [
-                provider for provider, api_key 
-                in provider_credentials.items() 
-                if api_key is not None
-            ]
-            
-            if not available_providers:
-                raise ValueError("No providers configured with valid API keys")
-                
-            provider = available_providers[0]
-            regions = self.app_instance.get_available_regions(provider=provider)
-            return [f"{region['city']}, {region['country']}" for region in regions]
+        def _fetch_locations():
+            regions = self.app_instance.get_available_regions()
+            return [f"{region.city}, {region.country}" for region in regions]
         
         # Call the cached function with hashable parameters
-        return _fetch_locations(self.app_instance.provider_credentials)
+        return _fetch_locations()
     
     def refresh_peers(self) -> List[Dict]:
         """Refresh and return the list of VPN peers"""

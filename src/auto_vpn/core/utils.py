@@ -2,6 +2,8 @@ import petname
 import random
 import logging
 import base64
+import secrets
+import string
 import sys
 from typing import Optional
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
@@ -9,6 +11,13 @@ from cryptography.hazmat.primitives import serialization
 from typing import Tuple
 from paramiko.rsakey import RSAKey
 from .settings import Settings
+
+def generate_password(length=32) -> str:
+    """
+    Generate a secure random password.
+    """
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def generate_ssh_keypair(bits: int = 2048) -> Tuple[RSAKey, str]:
     """

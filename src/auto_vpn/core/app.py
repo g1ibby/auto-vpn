@@ -2,28 +2,27 @@ import pytz
 import json
 import requests
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-
+from typing import List, Optional, Dict, Any, Tuple
 from auto_vpn.db.models import Server, VPNPeer
 from auto_vpn.db.db import db_instance
 from auto_vpn.db.repository import Repository
 from auto_vpn.providers.infra_manager import InfrastructureManager
 from auto_vpn.providers.vultr_manager import VultrManager
-from auto_vpn.providers.vultr_api import VultrAPI
+from auto_vpn.providers.linode_manager import LinodeManager
+from auto_vpn.providers.provider_factory import CloudProviderFactory
+from auto_vpn.providers.provider_base import CloudProvider
+from auto_vpn.providers.provider_types import Region, InstanceType
 from .wg_manager import WireGuardManager
 from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key, generate_ssh_keypair, serialize_private_key, deserialize_private_key, get_public_key_text
 
 logger = setup_logger(name="core.app")
-
-# Define a default Pulumi config passphrase constant
-DEFAULT_PULUMI_CONFIG_PASSPHRASE = "1"
 
 class App:
     """
     Application Layer that orchestrates interactions between DataLayer, Provider Managers,
     and VPN Managers to manage cloud providers, servers, and VPN peers.
     """
-    
+
     SUPPORTED_PROVIDERS = {'vultr', 'linode'}
     INACTIVITY_THRESHOLD_KEY = "inactivity_threshold"
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
@@ -41,9 +40,7 @@ class App:
         db_instance.init_db(db_url=db_url)
 
         self.data_layer = Repository()
-        self._vultr_api_cache = {}
         self.minimum_server_age = timedelta(minutes=15)
-        self.ssh_key_path = '~/.ssh/id_rsa'
 
         # Store API keys
         self.provider_credentials = {
@@ -56,7 +53,7 @@ class App:
             self.data_layer.get_setting(self.INACTIVITY_THRESHOLD_KEY)
         except ValueError:
             self.data_layer.set_setting(self.INACTIVITY_THRESHOLD_KEY, self.DEFAULT_INACTIVITY_THRESHOLD)
-        
+
         # If inactivity_threshold is provided, update the setting
         if inactivity_threshold is not None:
             self.set_inactivity_threshold(inactivity_threshold)
@@ -102,7 +99,7 @@ class App:
 
     # ----------------- Server Methods ----------------- #
 
-    def create_server(self, provider: str, location: str) -> Server:
+    def create_server(self, provider: str, location: str, server_type: str) -> Server:
         """
         Create a new server on the specified provider.
         :param provider: Name of the provider.
@@ -117,8 +114,6 @@ class App:
         
         if not self.provider_credentials.get(provider):
             raise ValueError(f"No API key provided for {provider}")
-
-        server_type = 'vc2-1c-1gb'
 
         # Generate project name
         project_name = generate_projectname()
@@ -137,7 +132,6 @@ class App:
 
         # Extract outputs from Pulumi stack
         instance_ip = up_result.outputs.get('instance_ip').value
-
 
         # Add server to the database
         server = self.data_layer.create_server(
@@ -211,43 +205,46 @@ class App:
         :return: The created VPNPeer object with WireGuard configuration.
         :raises ValueError: If no providers are available or operations fail.
         """
-        # Use first available configured provider
-        available_providers = [
-            provider for provider, api_key in self.provider_credentials.items() 
-            if api_key is not None
-        ]
-        if not available_providers:
-            raise ValueError("No providers configured. Please provide API keys during initialization.")
-
-        # For simplicity, use the first available provider
-        provider = available_providers[0]
         # Search for regions matching the location
         try:
-            search_results = self.search_regions(provider=provider, search_term=location)
+            search_results = self.search_regions(search_term=location)
         except ValueError as e:
             raise ValueError(f"Error searching regions: {e}")
-
         if not search_results:
             raise ValueError(f"No regions found matching the location '{location}'")
 
-        # Use the first matching region
-        region_id = search_results[0]['id']
-        region_name = f"{search_results[0]['city']}, {search_results[0]['country']}"
-
-        # Check if a server in this region already exists
-        # TODO: need to to get all server only for specific provider
+        # Get all existing servers
         servers = self.get_all_servers()
+        
+        # Try to find a region where we already have a server
         server = None
-        for srv in servers:
-            if srv.location == region_id:
-                # Found a server in the desired region
-                server = srv
+        selected_region = None
+        selected_instance = None
+        
+        for region, instance in search_results:
+            if any(srv.location == region.id for srv in servers):
+                selected_region = region
+                selected_instance = instance
+                server = next(srv for srv in servers if srv.location == region.id)
                 break
+        
+        # If no existing server found, use the first result
+        if not selected_region:
+            selected_region, selected_instance = search_results[0]
+            
+        region_id = selected_region.id
+        region_name = f"{selected_region.city}, {selected_region.country}" if selected_region.city else selected_region.country
+
+        logger.debug(f"Selected region: {region_name} ({region_id}), {selected_region.provider}")
+        logger.debug(f"Selected instance: {selected_instance.id} ({selected_instance.price_monthly}/mo)")
 
         if not server:
             # No server in the desired region, create one
             try:
-                server = self.create_server(provider=provider, location=region_id)
+                server = self.create_server(
+                        provider=selected_region.provider, 
+                        location=region_id, 
+                        server_type=selected_instance.id)
                 logger.info(f"Created server in region {region_name} - {region_id} with IP {server.ip_address}")
             except Exception as e:
                 raise ValueError(f"Error creating server: {e}")
@@ -467,70 +464,100 @@ class App:
         provider = provider.lower()
         if provider == 'vultr':
             return VultrManager(
-                pulumi_config_passphrase=DEFAULT_PULUMI_CONFIG_PASSPHRASE,
                 vultr_api_key=self.provider_credentials['vultr'],
                 ssh_public_key=ssh_public_key,
                 project_name=project_name,
                 stack_state=stack_state
             )
         elif provider == 'linode':
-            # Add Linode manager implementation when needed
-            return None
+            return LinodeManager(
+                linode_api_key=self.provider_credentials['linode'],
+                ssh_public_key=ssh_public_key,
+                project_name=project_name,
+                stack_state=stack_state
+            )
         return None
 
-    def _get_provider_api(self, provider: str) -> VultrAPI:
+    def _get_all_providers(self) -> List[CloudProvider]:
         """
-        Initialize and return a cached VultrAPI instance.
-        :param provider: Provider type ('vultr')
-        :return: An instance of VultrAPI
-        :raises ValueError: If the provider is not supported or no API key is available
+        Initialize and return providers that have valid credentials configured
+        :return: List of CloudProvider instances
         """
-        provider = provider.lower()
-        if provider != 'vultr':
-            raise ValueError(f"Provider {provider} is not supported for API operations")
+        providers = []
+        for provider_name, credentials in self.provider_credentials.items():
+            if provider_name in self.SUPPORTED_PROVIDERS and credentials is not None:
+                try:
+                    provider = CloudProviderFactory.get_provider(provider_name, credentials)
+                    if provider:
+                        providers.append(provider)
+                except ValueError as e:
+                    logger.warn(f"Could not initialize {provider_name}: {e}")
+        return providers
 
-        if provider not in self._vultr_api_cache:
-            if not self.provider_credentials.get(provider):
-                raise ValueError(f"No API key provided for {provider}")
-            
-            self._vultr_api_cache[provider] = VultrAPI(
-                api_key=self.provider_credentials[provider]
+    def get_available_regions(self) -> List[Region]:
+        """
+        Retrieve available regions from all configured providers.
+        :return: A list of Region objects from all providers
+        :raises ValueError: If no providers are available or all API calls fail
+        """
+        all_regions = []
+        errors = []
+        
+        for provider in self._get_all_providers():
+            try:
+                regions = provider.get_regions()
+                all_regions.extend(regions)
+            except requests.HTTPError as e:
+                errors.append(f"{provider.__class__.__name__}: {e}")
+        
+        if not all_regions and errors:
+            raise ValueError(f"Failed to retrieve regions from any provider: {'; '.join(errors)}")
+        
+        # Remove duplicates based on city and country
+        unique_regions = {}
+        for region in all_regions:
+            key = (region.country, region.city)
+            # If we already have this location, only replace if current has more info
+            if key not in unique_regions or (
+                not unique_regions[key].city and region.city
+            ):
+                unique_regions[key] = region
+        
+        # Sort regions by country and city
+        return sorted(
+            unique_regions.values(),
+            key=lambda r: (r.country, r.city or '')
+        )
+
+    def search_regions(self, search_term: str) -> List[Tuple[Region, Optional[InstanceType]]]:
+        """
+        Search for regions by city or country name/code across all providers,
+        including the smallest instance type available in each region.
+        
+        :param search_term: The term to search for in city or country
+        :return: List of tuples containing (Region, smallest InstanceType or None)
+        :raises ValueError: If no providers are available or all API calls fail
+        """
+        search_term = search_term.lower()
+        results = []
+        
+        for provider in self._get_all_providers():
+            try:
+                # Use the provider's search_smallest method we implemented earlier
+                provider_results = provider.search_smallest(search_term)
+                results.extend(provider_results)
+            except requests.HTTPError as e:
+                logger.warn(f"Failed to search {provider.__class__.__name__}: {e}")
+        
+        # Sort results by instance price (if available), then location
+        return sorted(
+            results,
+            key=lambda x: (
+                x[1].price_monthly if x[1] else float('inf'),
+                x[0].country,
+                x[0].city or ''
             )
-        
-        return self._vultr_api_cache[provider]
-
-    def get_available_regions(self, provider: str, plan_id: str = "vc2-1c-1gb") -> List[Dict]:
-        """
-        Retrieve available regions for a specific provider and plan using VultrAPI.
-        :param provider_id: ID of the Vultr provider.
-        :param plan_id: The plan ID to check for availability (default is 'vc2-1c-1gb').
-        :return: A list of dictionaries containing region details.
-        :raises ValueError: If the provider is invalid or API call fails.
-        """
-        vultr_api = self._get_provider_api(provider)
-        try:
-            regions = vultr_api.get_regions_with_plan(plan_id)
-            return regions
-        except requests.HTTPError as e:
-            raise ValueError(f"Failed to retrieve regions: {e}")
-
-    def search_regions(self, provider: str, search_term: str, plan_id: str = "vc2-1c-1gb") -> List[Dict]:
-        """
-        Search for regions by city or country name/code within the cached regions with the specified plan.
-        
-        :param provider_id: ID of the Vultr provider.
-        :param search_term: The term to search for in city or country.
-        :param plan_id: The plan ID to check for availability (default is 'vc2-1c-1gb').
-        :return: A list of dictionaries containing matching regions.
-        :raises ValueError: If the provider is invalid or API call fails.
-        """
-        vultr_api = self._get_provider_api(provider)
-        try:
-            results = vultr_api.search(search_term, plan_id)
-            return results
-        except requests.HTTPError as e:
-            raise ValueError(f"Failed to search regions: {e}")
-
+        )
 
     # ----------------- Additional Methods ----------------- #
 

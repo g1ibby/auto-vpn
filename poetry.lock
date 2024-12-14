@@ -1487,6 +1487,22 @@ semver = ">=2.13,<3.0"
 six = ">=1.12,<2.0"
 
 [[package]]
+name = "pulumi-linode"
+version = "4.30.1"
+description = "A Pulumi package for creating and managing linode cloud resources."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pulumi_linode-4.30.1-py3-none-any.whl", hash = "sha256:9fe6b996a3f7b35c3970b18e2f53d327cad24e764186e93e772a5845b9296d0a"},
+    {file = "pulumi_linode-4.30.1.tar.gz", hash = "sha256:64eeec41a5f26868529d0b6a63fdfb6e188d23222fe8ebd7235b9b32b651c160"},
+]
+
+[package.dependencies]
+parver = ">=0.2.1"
+pulumi = ">=3.136.0,<4.0.0"
+semver = ">=2.8.1"
+
+[[package]]
 name = "pyarrow"
 version = "18.1.0"
 description = "Python library for Apache Arrow"
@@ -2321,4 +2337,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.1"
-content-hash = "18b657c3ec97ba76709ea8292f3bf63337033b696f82cf03e7345bf5c6025cc0"
+content-hash = "eebd7f1c370e507a57b1f1bcb8556f661a1230b7addc22bae28ae5b1f0c11412"

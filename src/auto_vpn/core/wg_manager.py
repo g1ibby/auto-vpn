@@ -95,7 +95,6 @@ class WireGuardManager:
                 if shell.recv_ready():
                     recv = shell.recv(1024).decode('utf-8', errors='ignore')
                     buffer += recv
-                    logger.debug(recv, end='')
 
                     # Check for each prompt and send response
                     if response_index < len(responses):
@@ -174,12 +173,16 @@ class WireGuardManager:
             install_command = 'wget https://git.io/wireguard -O wireguard-install.sh && bash wireguard-install.sh'
 
             # Execute the installation command with responses
-            self.execute_command_with_responses(
-                command=install_command,
-                responses=responses,
-                completion_indicator='Finished!',
-                timeout=900  # 15 minutes
-            )
+            try:
+                self.execute_command_with_responses(
+                    command=install_command,
+                    responses=responses,
+                    completion_indicator='Finished!',
+                    timeout=900  # 15 minutes
+                )
+            except Exception as e:
+                logger.warn(f"Error during installation: {e}")
+                raise e
 
             # Retrieve and display client.conf
             client_conf_path = f'/root/{client_name}.conf'

@@ -17,14 +17,10 @@ class InfrastructureManager(ABC):
     Provides common functionalities for different cloud providers.
     """
 
-    def __init__(self, pulumi_config_passphrase, project_name=None, stack_state: Optional[str] = None):
+    def __init__(self, project_name=None, stack_state: Optional[str] = None):
         """
         Initialize the InfrastructureManager.
-
-        :param pulumi_config_passphrase: Passphrase for Pulumi config encryption.
-        :param project_name: Optional name for the Pulumi project. If not provided, a unique name is generated.
         """
-        self.pulumi_config_passphrase = pulumi_config_passphrase
         self.project_name = project_name or f"project-{uuid.uuid4()}"
         self.stack_name = "dev"  # Default stack name; can be made configurable if needed
 
@@ -47,7 +43,7 @@ class InfrastructureManager(ABC):
             pulumi_home=Path(self.temp_dir) / ".pulumi",
             program=self.pulumi_program,
             env_vars={
-                "PULUMI_CONFIG_PASSPHRASE": self.pulumi_config_passphrase,
+                "PULUMI_CONFIG_PASSPHRASE": "1",
                 "PULUMI_SKIP_UPDATE_CHECK": "true",
                 "PULUMI_BACKEND_URL": "file://" + self.temp_dir,
                 "PULUMI_DISABLE_CLOUD_INTEGRATION": "true"
@@ -62,8 +58,6 @@ class InfrastructureManager(ABC):
         else:
             self.stack = self.create_or_select_stack()
 
-        self.location = "ewr" 
-        self.server_type ="vc2-1c-1gb" 
         self.install_plugins()
 
 

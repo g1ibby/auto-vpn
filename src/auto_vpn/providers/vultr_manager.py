@@ -3,10 +3,9 @@ from pulumi import automation as auto
 import pulumi
 import ediri_vultr as vultr
 from auto_vpn.core.utils import setup_logger
+from .infra_manager import InfrastructureManager
 
 logger = setup_logger('providers.vultr_manager')
-
-from .infra_manager import InfrastructureManager
 
 class VultrManager(InfrastructureManager):
     """
@@ -15,7 +14,6 @@ class VultrManager(InfrastructureManager):
 
     def __init__(
             self, 
-            pulumi_config_passphrase, 
             vultr_api_key, 
             ssh_public_key,
             project_name=None, 
@@ -23,7 +21,6 @@ class VultrManager(InfrastructureManager):
         """
         Initialize the VultrManager.
 
-        :param pulumi_config_passphrase: Passphrase for Pulumi config encryption.
         :param vultr_api_key: API key for Vultr.
         :param project_name: Optional name for the Pulumi project.
         :param stack_state: Optional dictionary containing previously exported stack state.
@@ -33,7 +30,6 @@ class VultrManager(InfrastructureManager):
         self.ssh_public_key = ssh_public_key
 
         super().__init__(
-                pulumi_config_passphrase, 
                 project_name, 
                 stack_state=stack_state
         )
