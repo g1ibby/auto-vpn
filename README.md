@@ -1,6 +1,8 @@
 # WireGuard VPN Server Deployer and Manager
 ## Overview
 
+![Main interface](images/main.png)
+
 This project aims to develop an open-source tool for deploying and managing WireGuard VPN servers across multiple cloud providers. The tool will provide a seamless way to:
 
 - Deploy Servers: Create server instances on cloud providers like Vultr and Linode using Pulumi.
