@@ -509,21 +509,28 @@ class App:
                 all_regions.extend(regions)
             except requests.HTTPError as e:
                 errors.append(f"{provider.__class__.__name__}: {e}")
-        
+
         if not all_regions and errors:
             raise ValueError(f"Failed to retrieve regions from any provider: {'; '.join(errors)}")
-        
+
         # Remove duplicates based on city and country
         unique_regions = {}
         for region in all_regions:
-            key = (region.country, region.city)
-            # If we already have this location, only replace if current has more info
+            # Extract base city name (remove numbers and extra spaces)
+            city = region.city if region.city else ''
+            base_city = ' '.join(word for word in city.split() if not any(char.isdigit() for char in word))
+            base_city = base_city.strip()
+
+            key = (region.country, base_city)
+
+            # If we haven't seen this city before, or if this is the "primary" version
+            # (no numbers in name), use this region
             if key not in unique_regions or (
-                not unique_regions[key].city and region.city
+                any(char.isdigit() for char in unique_regions[key].city)
+                and not any(char.isdigit() for char in city)
             ):
                 unique_regions[key] = region
-        
-        # Sort regions by country and city
+
         return sorted(
             unique_regions.values(),
             key=lambda r: (r.country, r.city or '')
@@ -533,22 +540,21 @@ class App:
         """
         Search for regions by city or country name/code across all providers,
         including the smallest instance type available in each region.
-        
+
         :param search_term: The term to search for in city or country
         :return: List of tuples containing (Region, smallest InstanceType or None)
         :raises ValueError: If no providers are available or all API calls fail
         """
         search_term = search_term.lower()
         results = []
-        
+
         for provider in self._get_all_providers():
             try:
-                # Use the provider's search_smallest method we implemented earlier
                 provider_results = provider.search_smallest(search_term)
                 results.extend(provider_results)
             except requests.HTTPError as e:
                 logger.warn(f"Failed to search {provider.__class__.__name__}: {e}")
-        
+
         # Sort results by instance price (if available), then location
         return sorted(
             results,
