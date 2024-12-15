@@ -7,12 +7,14 @@ Deploy your personal WireGuard VPN server with just a few clicks. No subscriptio
 
 This project provides an effortless way to spin up your own temporary, cost-effective WireGuard VPN servers on-demand—no long-term subscriptions or complex manual setups required. By leveraging popular VPS providers like Vultr or Linode, it automatically:
 
-- Deploys on Demand: Quickly launch a fresh VPS instance with WireGuard pre-installed.
-- Easy Configuration: Generate and manage user profiles with a user-friendly GUI.
-- Automatic Cleanup: Idle VPN servers are automatically torn down after a set period of inactivity, ensuring you only pay for what you use.
-- Enhanced Privacy: Retain full control over your VPN infrastructure and connections, eliminating the need to trust external VPN services.
+## 🚀 Features
 
-In short, this tool lets you enjoy a secure, private VPN connection whenever you need it and stop paying the moment you’re done.
+- **On-Demand Deployment**: Launch VPN servers instantly on Vultr or Linode
+- **Cost-Effective**: Pay only for actual usage with automatic server cleanup
+- **User-Friendly Interface**: Simple GUI for server and profile management
+- **Enhanced Privacy**: Full control over your VPN infrastructure
+- **Automated Setup**: Pre-configured WireGuard installation
+- **Multi-Provider Support**: Works with major VPS providers (Vultr, Linode)
 
 ## 🏃‍♂️ Quick Start
 

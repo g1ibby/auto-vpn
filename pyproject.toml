@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "auto-vpn"
 version = "0.1.0"
-description = "VPN Management System with Streamlit UI"
+description = "Auto-VPN: On-Demand WireGuard VPN Server Manager"
 authors = ["Sergei Varibrus"]
 readme = "README.md"
 packages = [{include = "auto_vpn", from = "src"}]

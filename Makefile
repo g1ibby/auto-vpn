@@ -4,9 +4,6 @@
 run:
 	streamlit run src/auto_vpn/web/web.py
 
-run-debug:
-	streamlit run src/auto_vpn/web/streamlit_app.py --logger.level=debug
-
 # Docker commands
 docker-build:
 	docker build -t auto-vpn .
