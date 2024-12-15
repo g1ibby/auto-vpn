@@ -1,7 +1,7 @@
 # Auto-VPN: On-Demand WireGuard VPN Server Manager 
 [![GitHub license](https://img.shields.io/github/license/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/blob/main/LICENSE)
-[![Docker Pulls](https://img.shields.io/docker/pulls/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/pkgs/container/auto-vpn)
 [![GitHub stars](https://img.shields.io/github/stars/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/stargazers)
+
 Deploy your personal WireGuard VPN server with just a few clicks. No subscriptions, no complexity, full control.
 
 ![Main interface](images/main.png)
