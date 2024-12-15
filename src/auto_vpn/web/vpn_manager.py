@@ -14,8 +14,6 @@ class VPNManager:
         @st.cache_data(ttl=3600)
         def _fetch_locations():
             regions = self.app_instance.get_available_regions()
-            for region in regions:
-                print(f"Region: {region.city}, {region.country}, {region.id}")
             return [f"{region.city}, {region.country}" for region in regions]
         
         # Call the cached function with hashable parameters

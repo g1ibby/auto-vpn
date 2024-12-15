@@ -1239,6 +1239,21 @@ files = [
 ]
 
 [[package]]
+name = "peewee-migrate"
+version = "1.13.0"
+description = "Support for migrations in Peewee ORM"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "peewee_migrate-1.13.0-py3-none-any.whl", hash = "sha256:66597f5b8549a8ff456915db60e8382daf7839eef79352027e7cf54feec56860"},
+    {file = "peewee_migrate-1.13.0.tar.gz", hash = "sha256:1ab67f72a0936006155e1b310c18a32f79e4dff3917cfeb10112ca92518721e5"},
+]
+
+[package.dependencies]
+click = "*"
+peewee = ">=3,<4"
+
+[[package]]
 name = "petname"
 version = "2.6"
 description = "Generate human-readable, random object names"
@@ -2337,4 +2352,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.1"
-content-hash = "eebd7f1c370e507a57b1f1bcb8556f661a1230b7addc22bae28ae5b1f0c11412"
+content-hash = "3c08e5fc1eeb738c96efe58542cd9ee0986ae95c818fe03c027cd198fa676f6f"

@@ -46,9 +46,18 @@ class Database:
         self.proxy.initialize(database)
         self.db = database
         self.initialized = True
-        
-        from auto_vpn.db.models import BaseModel, Server, VPNPeer, Setting
-        self.db.create_tables([Server, VPNPeer, Setting])
+
+        # Replace create_tables with migration
+        from peewee_migrate import Router
+        router = Router(self.db)
+ 
+        # Run all pending migrations
+        try:
+            router.run()
+            logger.info("Database migrations completed successfully")
+        except Exception as e:
+            logger.error(f"Error running migrations: {e}")
+            raise
 
     @contextmanager
     def connection(self):
