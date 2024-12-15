@@ -17,7 +17,7 @@ Run Command
 Use the following one-liner to start the container:
 
 ```
-docker run --rm -d --name auto-vpn \
+docker run --rm -d --pull always --name auto-vpn \
   -e USERNAME=admin \
   -e PASSWORD=qwerty \
   -e VULTR_API_KEY=<your-vultr-api-key> \
