@@ -9,13 +9,19 @@ on:
       - '.github/**'
 
 jobs:
-  release:
+  debug-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
 
     steps:
+      - name: Debug Event
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Branch name: ${{ github.ref }}"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+          
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
