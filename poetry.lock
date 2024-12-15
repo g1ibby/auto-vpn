@@ -417,6 +417,40 @@ files = [
 ]
 
 [[package]]
+name = "country-converter"
+version = "1.3"
+description = "The country converter (coco) - a Python package for converting country names between different classifications schemes"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "country_converter-1.3-py3-none-any.whl", hash = "sha256:006958c83adeada455d2f178921fdd051def736259ff250fada912eaf3ca8cf1"},
+    {file = "country_converter-1.3.tar.gz", hash = "sha256:f6a1a14d1f98112ca90a5198f645f4e60bb73840e98f3f733893ff5b617c2f38"},
+]
+
+[package.dependencies]
+pandas = ">=1.0"
+
+[package.extras]
+dev = ["country-converter[lint,test]"]
+lint = ["black (>=22.3.0)", "isort (>=5.5.2)"]
+test = ["coveralls", "pytest (>=5.4.0)", "pytest-black", "pytest-cov (>=2.7.0)", "pytest-datadir", "pytest-mypy"]
+
+[[package]]
+name = "countryflag"
+version = "0.1.2b3"
+description = "A Python package for converting country names into emoji flags"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "countryflag-0.1.2b3-py3-none-any.whl", hash = "sha256:10e76a4df5d47bbb431b3e1337cc2f5039b7cbb2f338ad865cc4a948be50f88a"},
+    {file = "countryflag-0.1.2b3.tar.gz", hash = "sha256:6dbb403d4c5bdbc8e72217d9934ad451a82d11a0193abf07f13ec1ba6a5c3fd0"},
+]
+
+[package.dependencies]
+country-converter = "*"
+emoji-country-flag = "*"
+
+[[package]]
 name = "coverage"
 version = "7.6.8"
 description = "Code coverage measurement for Python"
@@ -599,6 +633,23 @@ files = [
 parver = ">=0.2.1"
 pulumi = ">=3.0.0,<4.0.0"
 semver = ">=2.8.1"
+
+[[package]]
+name = "emoji-country-flag"
+version = "2.0.1"
+description = "En/Decode unicode country flags emoji"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "emoji_country_flag-2.0.1-py3-none-any.whl", hash = "sha256:5465745b20f33d1ea46a53126f23f5aea34d66b20c2571c7bbb6a63925e4d95a"},
+    {file = "emoji_country_flag-2.0.1.tar.gz", hash = "sha256:0faa32ca4f12da4e4c8324431947077b116caf998b0df0c01168ae8ece24e57a"},
+]
+
+[package.extras]
+coverage = ["codacy-coverage (>=1.3.11)", "coverage (>=7.5.1)"]
+docs = ["sphinx (>=7.3.7)", "sphinx-rtd-theme (>=2.0.0)", "sphinxcontrib-jquery (>=4.1)"]
+ruff = ["ruff (>=0.4.7)"]
+test = ["emoji (>=2.12.1)", "pytest (>=8.2.2)", "tox (>=4.15.0)"]
 
 [[package]]
 name = "extra-streamlit-components"
@@ -2352,4 +2403,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.1"
-content-hash = "3c08e5fc1eeb738c96efe58542cd9ee0986ae95c818fe03c027cd198fa676f6f"
+content-hash = "d07575f44d49a8ff61b0b896733fc675b450724a4a554f5a7dc60fffbf40dd1b"

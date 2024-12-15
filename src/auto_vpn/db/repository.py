@@ -19,7 +19,9 @@ class Repository:
         ssh_private_key: str,
         location: str,
         stack_state: str,
-        server_type: str
+        server_type: str,
+        country: str,
+        price_per_month: float | None = None
     ) -> Server:
         """Create a new server."""
         with db_instance.connection():
@@ -32,7 +34,9 @@ class Repository:
                     ssh_private_key=ssh_private_key,
                     location=location,
                     stack_state=stack_state,
-                    server_type=server_type
+                    server_type=server_type,
+                    country=country,
+                    price_per_month=price_per_month
                 )
                 return server
             except IntegrityError as e:

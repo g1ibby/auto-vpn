@@ -99,16 +99,13 @@ class App:
 
     # ----------------- Server Methods ----------------- #
 
-    def create_server(self, provider: str, location: str, server_type: str) -> Server:
+    def create_server(self, region: Region, type: InstanceType) -> Server:
         """
         Create a new server on the specified provider.
-        :param provider: Name of the provider.
-        :param location: Server location or region.
-        :param server_type: Type of the server (e.g., 't2.medium').
         :return: The created Server object.
         :raises ValueError: If the provider does not exist or server creation fails.
         """
-        provider = provider.lower()
+        provider = region.provider.lower()
         if provider not in self.SUPPORTED_PROVIDERS:
             raise ValueError(f"Unsupported provider: {provider}")
         
@@ -126,7 +123,7 @@ class App:
             raise ValueError(f"No manager available for provider type: {provider.provider_type}")
 
         # Deploy the Pulumi stack to create the server
-        up_result = provider_manager.up(location=location, server_type=server_type)
+        up_result = provider_manager.up(location=region.id, server_type=type.id)
 
         stack_state = provider_manager.export_stack_state()
 
@@ -140,9 +137,11 @@ class App:
             ip_address=instance_ip,
             username='root',  # Enforce 'root' as the SSH username
             ssh_private_key=serialize_private_key(private_key),  # Placeholder, as SSH key management is removed
-            location=location,
+            location=region.id,
             stack_state=json.dumps(stack_state, indent=2),
-            server_type=server_type,
+            server_type=type.id,
+            country=region.country,
+            price_per_month=float(type.price_monthly)
         )
         return server
 
@@ -220,7 +219,7 @@ class App:
         server = None
         selected_region = None
         selected_instance = None
-        
+
         for region, instance in search_results:
             if any(srv.location == region.id for srv in servers):
                 selected_region = region
@@ -241,10 +240,7 @@ class App:
         if not server:
             # No server in the desired region, create one
             try:
-                server = self.create_server(
-                        provider=selected_region.provider, 
-                        location=region_id, 
-                        server_type=selected_instance.id)
+                server = self.create_server(selected_region, selected_instance)
                 logger.info(f"Created server in region {region_name} - {region_id} with IP {server.ip_address}")
             except Exception as e:
                 raise ValueError(f"Error creating server: {e}")

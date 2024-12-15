@@ -168,9 +168,9 @@ class VPNApplication:
             st.divider()
 
     def _render_peer_details(self, peer: dict):
-        """Render peer details (name, location, IP)"""
+        """Render peer details (name, location, IP, and age)"""
         st.write(f"**{peer['peer_name']}**")
-        st.write(f"🌍 {peer['location']} | 🖥️ {peer['ip_address']}")
+        st.write(f"{peer['country_flag']} {peer['country']} | 🖥️ {peer['ip_address']} | ⏱️ {peer['age']}")
 
     def _render_config_download(self, peer: dict):
         """Render config download button"""

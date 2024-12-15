@@ -1,7 +1,9 @@
-from datetime import timedelta
+from datetime import datetime
+import pytz
 import streamlit as st
 from typing import List, Dict
 from auto_vpn.core.app import App
+import countryflag
 
 class VPNManager:
     """Handles VPN-related operations"""
@@ -25,12 +27,16 @@ class VPNManager:
         peers_data = []
         for server in servers_with_peers:
             for peer in server['peers']:
+                print(peer.created_at)
                 peers_data.append({
                     'peer_name': peer.peer_name,
-                    'location': server['server'].location,
+                    'country': server['server'].country,
+                    'country_flag': countryflag.getflag([server['server'].country]),
                     'ip_address': server['server'].ip_address,
                     'config': peer.wireguard_config,
-                    'peer_id': peer.id
+                    'peer_id': peer.id,
+                    'created_at': peer.created_at,
+                    'age': get_friendly_time_diff(peer.created_at)
                 })
         return peers_data
     
@@ -41,3 +47,26 @@ class VPNManager:
     def delete_peer(self, peer_id: int):
         """Delete a VPN peer"""
         self.app_instance.delete_vpn_peer(peer_id)
+
+def get_friendly_time_diff(created_at: datetime) -> str:
+    """Convert timestamp to user-friendly time difference"""
+    # Ensure created_at is timezone-aware and in UTC
+    if created_at.tzinfo is None:
+        created_at = pytz.UTC.localize(created_at)
+    else:
+        created_at = created_at.astimezone(pytz.UTC)
+    now = datetime.now(pytz.UTC)
+    diff = now - created_at
+    
+    minutes = int(diff.total_seconds() / 60)
+    hours = int(minutes / 60)
+    days = int(hours / 24)
+    
+    if days > 0:
+        return f"{days}d ago"
+    elif hours > 0:
+        return f"{hours}h ago"
+    elif minutes > 0:
+        return f"{minutes}m ago"
+    else:
+        return "just now"

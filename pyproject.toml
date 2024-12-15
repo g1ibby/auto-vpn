@@ -24,6 +24,7 @@ psycopg2-binary = "^2.9.10"
 pydantic-settings = "^2.6.1"
 pulumi-linode = "^4.30.1"
 peewee-migrate = "^1.13.0"
+countryflag = "^0.1.2b3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

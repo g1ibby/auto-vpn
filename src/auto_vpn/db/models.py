@@ -2,6 +2,7 @@ from peewee import (
     CharField,
     ForeignKeyField,
     TextField,
+    FloatField,
     DateTimeField,
     Model,
 )
@@ -27,6 +28,8 @@ class Server(BaseModel):
     location = CharField()
     stack_state = TextField()
     server_type = CharField()
+    country = CharField()
+    price_per_month = FloatField(null=True)
     created_at = DateTimeField(
         default=lambda: datetime.now(pytz.UTC),
         formats=['%Y-%m-%d %H:%M:%S.%f%z', '%Y-%m-%d %H:%M:%S%z']
