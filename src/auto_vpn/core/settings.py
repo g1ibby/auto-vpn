@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     USERNAME: str = Field(..., description="Username for authentication")
     PASSWORD: str = Field(..., description="Password for authentication")
     DATABASE_URL: str = Field(
-        default="sqlite:///data_layer.db",
+        default="sqlite:///data_layer/data_layer.db",
         description="Database connection string"
     )
     SELF_URL: Optional[str] = Field(
