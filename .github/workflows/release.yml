@@ -1,8 +1,7 @@
 name: Create Release
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ] 
     paths-ignore:
       - '**.md'
       - '.gitignore'

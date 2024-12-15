@@ -1,10 +1,8 @@
 .PHONY: install test lint format clean run run-debug docker-build docker-run
 
-# Change this command
 run:
 	streamlit run src/auto_vpn/web/web.py
 
-# Docker commands
 docker-build:
 	docker build -t auto-vpn .
 
