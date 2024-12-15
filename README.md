@@ -1,5 +1,8 @@
-# WireGuard VPN Server Deployer and Manager
-## Overview
+# Auto-VPN: On-Demand WireGuard VPN Server Manager 
+[![GitHub license](https://img.shields.io/github/license/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/blob/main/LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/pkgs/container/auto-vpn)
+[![GitHub stars](https://img.shields.io/github/stars/g1ibby/auto-vpn)](https://github.com/g1ibby/auto-vpn/stargazers)
+Deploy your personal WireGuard VPN server with just a few clicks. No subscriptions, no complexity, full control.
 
 ![Main interface](images/main.png)
 
@@ -12,13 +15,17 @@ This project provides an effortless way to spin up your own temporary, cost-effe
 
 In short, this tool lets you enjoy a secure, private VPN connection whenever you need it and stop paying the moment you’re done.
 
-## How to run on local computer
+## 🏃‍♂️ Quick Start
 
-To run the auto-vpn Docker image on your machine, follow the steps below.
+### Local Deployment (Docker)
 
-Use the following one-liner to start the container:
-
+1. Create a data directory:
+```bash
+mkdir data_layer
 ```
+
+2. Run the container:
+```bash
 docker run --rm -d --pull always --name auto-vpn \
   -e USERNAME=admin \
   -e PASSWORD=qwerty \
@@ -28,49 +35,65 @@ docker run --rm -d --pull always --name auto-vpn \
   ghcr.io/g1ibby/auto-vpn:main
 ```
 
-### Notes
-Make sure that `$(pwd)/data_layer` exists
-### Environment Variables:
-- USERNAME and PASSWORD: Required for admin access.
-- Either VULTR_API_KEY or LINODE_API_KEY must be set for provider API integration.
-- If DATABASE_URL is not set, a local SQLite database will be used at data_layer.db in the container. This is mapped to your current working directory.
+3. Access the interface at `http://localhost:8501`
 
-Make sure to replace the placeholder values (e.g., VULTR_API_KEY) with your actual credentials.
-This command will launch the auto-vpn service, accessible at http://localhost:8501.
+### Free Cloud Deployment (Render.com)
 
-## Run on free render.com
+1. **Create New Web Service**
+   - Sign in to [Render Dashboard](https://dashboard.render.com)
+   - Choose "New Web Service"
+   - Select Docker runtime
+   - Use image: `ghcr.io/g1ibby/auto-vpn:main`
 
-Getting this application running on Render’s free tier is straightforward:
+2. **Configure Environment Variables**
+   
+   Required:
+   - `USERNAME`: Admin username
+   - `PASSWORD`: Admin password
+   - `VULTR_API_KEY` or `LINODE_API_KEY`: VPS provider API key
+   - `SELF_URL`: Your Render service URL (e.g., https://your-service.onrender.com)
 
-1. Create a New Service:
-- Go to your Render Dashboard and create a new Web Service.
-- When prompted for the service’s environment, choose Docker.
-- Provide the Docker image:
-`
-ghcr.io/g1ibby/auto-vpn:main
-`
+   Optional:
+   - `DATABASE_URL`: PostgreSQL connection string (recommended for persistence)
 
-2. Set Environment Variables:
-Under the Environment tab, add the necessary variables:
+3. **Deploy and Access**
+   - Service will be available at your Render URL
+   - Auto-ping feature keeps the service active on free tier
 
-- USERNAME: Set your desired admin username (e.g., admin).
-- PASSWORD: Set your desired admin password (e.g., qwerty).
-- VULTR_API_KEY or LINODE_API_KEY: Provide your chosen VPS provider’s API key.
-- SELF_URL: Use the domain that Render assigns to your service (e.g., https://your-service.onrender.com). The application will ping this URL periodically to stay active on the free tier.
+## 💻 Environment Variables
 
-(Optional)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| USERNAME | Yes | Admin login username |
+| PASSWORD | Yes | Admin login password |
+| VULTR_API_KEY | * | Vultr API key |
+| LINODE_API_KEY | * | Linode API key |
+| SELF_URL | No | Service URL for auto-ping |
+| DATABASE_URL | No | PostgreSQL connection string |
 
-- DATABASE_URL: If you need persistent storage, consider using Supabase to create a hosted PostgreSQL database. Set the DATABASE_URL to the connection string provided by Supabase. This ensures your VPN configuration and user data remain intact, even if the container restarts.
+\* Either VULTR_API_KEY or LINODE_API_KEY is required
 
-3. Configure Ports and Start:
+## 🏗️ Architecture
 
-- Render will automatically detect the service’s port (default: 8501).
-- Deploy your service. Once deployed, the application should be accessible at the SELF_URL you provided.
+The project leverages several powerful technologies:
 
-4. Keep Your Service Running on the Free Tier:
-Thanks to the SELF_URL setting, the app pings itself every few minutes. This behavior helps keep your service running on Render’s free tier by showing activity and preventing automatic shutdown due to inactivity.
+- **Pulumi**: Infrastructure as Code for VPS management
+- **WireGuard**: Secure VPN protocol
+- **Streamlit**: Modern web interface
+- **Docker**: Containerization and easy deployment
 
-## Under the Hood
+## 🔒 Security Considerations
+
+- All VPN traffic is encrypted using WireGuard
+- No logs are kept on VPN servers
+- Servers are automatically destroyed after inactivity
+- Full control over infrastructure eliminates third-party trust
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 🙏 Acknowledgments
 
 - Pulumi: Handles infrastructure provisioning, making it simple to deploy and tear down VPS instances on-demand.
 - [Nyr/wireguard-install](https://github.com/Nyr/wireguard-install): Automates the WireGuard installation process, ensuring a seamless setup experience.
