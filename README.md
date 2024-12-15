@@ -38,8 +38,40 @@ Make sure that `$(pwd)/data_layer` exists
 Make sure to replace the placeholder values (e.g., VULTR_API_KEY) with your actual credentials.
 This command will launch the auto-vpn service, accessible at http://localhost:8501.
 
+## Run on free render.com
+
+Getting this application running on Render’s free tier is straightforward:
+
+1. Create a New Service:
+- Go to your Render Dashboard and create a new Web Service.
+- When prompted for the service’s environment, choose Docker.
+- Provide the Docker image:
+`
+ghcr.io/g1ibby/auto-vpn:main
+`
+
+2. Set Environment Variables:
+Under the Environment tab, add the necessary variables:
+
+- USERNAME: Set your desired admin username (e.g., admin).
+- PASSWORD: Set your desired admin password (e.g., qwerty).
+- VULTR_API_KEY or LINODE_API_KEY: Provide your chosen VPS provider’s API key.
+- SELF_URL: Use the domain that Render assigns to your service (e.g., https://your-service.onrender.com). The application will ping this URL periodically to stay active on the free tier.
+
+(Optional)
+
+- DATABASE_URL: If you need persistent storage, consider using Supabase to create a hosted PostgreSQL database. Set the DATABASE_URL to the connection string provided by Supabase. This ensures your VPN configuration and user data remain intact, even if the container restarts.
+
+3. Configure Ports and Start:
+
+- Render will automatically detect the service’s port (default: 8501).
+- Deploy your service. Once deployed, the application should be accessible at the SELF_URL you provided.
+
+4. Keep Your Service Running on the Free Tier:
+Thanks to the SELF_URL setting, the app pings itself every few minutes. This behavior helps keep your service running on Render’s free tier by showing activity and preventing automatic shutdown due to inactivity.
 
 ## Under the Hood
 
 - Pulumi: Handles infrastructure provisioning, making it simple to deploy and tear down VPS instances on-demand.
 - [Nyr/wireguard-install](https://github.com/Nyr/wireguard-install): Automates the WireGuard installation process, ensuring a seamless setup experience.
+- [Streamlit](https://streamlit.io): GUI
