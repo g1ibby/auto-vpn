@@ -1,7 +1,22 @@
 name: Create Release
 on:
+  # Manual trigger with version choice
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type (major/minor/patch)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+  
+  # Automatic trigger on push to main
   push:
-    branches: [ "main" ] 
+    branches:
+      - main
     paths-ignore:
       - '**.md'
       - '.gitignore'
@@ -23,14 +38,20 @@ jobs:
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         continue-on-error: true
-        
+
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
-          release_branches: main
+          # Use manual input if workflow_dispatch, otherwise determine from commit messages
+          default_bump: ${{ github.event.inputs.version_type || 'patch' }}
+          # Configure commit messages that trigger version bumps
+          major_string: "BREAKING CHANGE:"
+          minor_string: "feat:"
+          patch_string: "fix:"
+          # Optional: prefix for tag
+          tag_prefix: "v"
           
       - name: Create Release
         uses: softprops/action-gh-release@v1
