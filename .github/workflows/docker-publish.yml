@@ -5,6 +5,11 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
+  workflow_run:
+    workflows: ["Create Release"]
+    types:
+      - completed
+
 
 env:
   REGISTRY: ghcr.io
