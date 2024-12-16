@@ -1,6 +1,5 @@
 name: Create Release
 on:
-  # Manual trigger with version choice
   workflow_dispatch:
     inputs:
       version_type:
@@ -12,8 +11,6 @@ on:
           - patch
           - minor
           - major
-  
-  # Automatic trigger on push to main
   push:
     branches:
       - main
@@ -28,6 +25,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+
+    outputs:
+      new_version: ${{ steps.tag_version.outputs.new_tag }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,20 +44,25 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Use manual input if workflow_dispatch, otherwise determine from commit messages
           default_bump: ${{ github.event.inputs.version_type || 'patch' }}
-          # Configure commit messages that trigger version bumps
-          major_string: "BREAKING CHANGE:"
-          minor_string: "feat:"
-          patch_string: "fix:"
-          # Optional: prefix for tag
           tag_prefix: "v"
           
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
           draft: false
           prerelease: false
+
+  trigger-docker-build:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Docker Build
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: new-release
+          client-payload: '{"version": "${{ needs.release.outputs.new_version }}"}'
