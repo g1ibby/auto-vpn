@@ -33,7 +33,7 @@ docker run --rm -d --pull always --name auto-vpn \
   -e VULTR_API_KEY=<your-vultr-api-key> \
   -v $(pwd)/data_layer:/app/data_layer \
   -p 8501:8501 \
-  ghcr.io/g1ibby/auto-vpn:main
+  ghcr.io/g1ibby/auto-vpn
 ```
 
 3. Access the interface at `http://localhost:8501`
@@ -44,7 +44,7 @@ docker run --rm -d --pull always --name auto-vpn \
    - Sign in to [Render Dashboard](https://dashboard.render.com)
    - Choose "New Web Service"
    - Select Docker runtime
-   - Use image: `ghcr.io/g1ibby/auto-vpn:main`
+   - Use image: `ghcr.io/g1ibby/auto-vpn`
 
 2. **Configure Environment Variables**
    
