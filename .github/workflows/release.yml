@@ -44,11 +44,11 @@ jobs:
           default_bump: ${{ github.event.inputs.version_type || 'patch' }}
           tag_prefix: "v"
           
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          draft: false
-          prerelease: false
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ steps.tag_version.outputs.new_tag }}
+      #     name: ${{ steps.tag_version.outputs.new_tag }}
+      #     body: ${{ steps.tag_version.outputs.changelog }}
+      #     draft: false
+      #     prerelease: false
