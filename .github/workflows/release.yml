@@ -26,9 +26,6 @@ jobs:
       contents: write
       pull-requests: write
 
-    outputs:
-      new_version: ${{ steps.tag_version.outputs.new_tag }}
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,14 +52,3 @@ jobs:
           body: ${{ steps.tag_version.outputs.changelog }}
           draft: false
           prerelease: false
-
-  trigger-docker-build:
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Docker Build
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: new-release
-          client-payload: '{"version": "${{ needs.release.outputs.new_version }}"}'

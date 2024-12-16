@@ -5,8 +5,6 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
-  release:
-    types: [published, created]
 
 env:
   REGISTRY: ghcr.io
@@ -26,20 +24,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Get version from git tag or generate from commit
       - name: Get version
         id: version
         run: |
           if [[ $GITHUB_REF == refs/tags/* ]]; then
-            # If this is a tag push, use the tag name as version
             VERSION=${GITHUB_REF#refs/tags/v}
           else
-            # If this is a branch push, use commit sha and branch name
             SHA=$(git rev-parse --short HEAD)
             BRANCH=${GITHUB_REF#refs/heads/}
             VERSION="${BRANCH}-${SHA}"
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
