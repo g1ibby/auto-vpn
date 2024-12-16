@@ -11,14 +11,6 @@ on:
           - patch
           - minor
           - major
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-      - '.github/**'
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -43,12 +35,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ github.event.inputs.version_type || 'patch' }}
           tag_prefix: "v"
-          
-      # - name: Create Release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     tag_name: ${{ steps.tag_version.outputs.new_tag }}
-      #     name: ${{ steps.tag_version.outputs.new_tag }}
-      #     body: ${{ steps.tag_version.outputs.changelog }}
-      #     draft: false
-      #     prerelease: false
