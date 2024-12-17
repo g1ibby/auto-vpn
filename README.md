@@ -76,6 +76,8 @@ docker run --rm -d --pull always --name auto-vpn \
 
 ## 🏗️ Architecture
 
+![Flowchart](images/flowchart.png)
+
 The project leverages several powerful technologies:
 
 - **Pulumi**: Infrastructure as Code for VPS management
