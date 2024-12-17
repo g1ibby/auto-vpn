@@ -34,6 +34,9 @@ RUN curl -fsSL https://get.pulumi.com | sh -s -- --version $PULUMI_VERSION
 # Stage 3: Final stage
 FROM python:3.12-slim
 
+# Add image metadata
+LABEL org.opencontainers.image.source="https://github.com/g1ibby/auto-vpn"
+
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
