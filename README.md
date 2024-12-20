@@ -96,6 +96,18 @@ The project leverages several powerful technologies:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## 🗺️ Roadmap
+
+### New Cloud Providers
+- [ ] DigitalOcean
+- [ ] Hetzner
+- [ ] AWS
+
+### Enhanced User Experience
+- [ ] QR code generation for WireGuard peers
+  - Easy mobile device configuration
+  - One-click peer sharing
+
 ## 🙏 Acknowledgments
 
 - Pulumi: Handles infrastructure provisioning, making it simple to deploy and tear down VPS instances on-demand.
