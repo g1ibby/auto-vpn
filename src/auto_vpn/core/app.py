@@ -28,7 +28,7 @@ class App:
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
     def __init__(self, 
-             db_url: str = 'sqlite:///data_layer/data_layer.db', 
+             db_url: str = 'sqlite:///data_layer.db', 
              inactivity_threshold: Optional[timedelta] = None,
              vultr_api_key: Optional[str] = None,
              linode_api_key: Optional[str] = None):
