@@ -49,12 +49,32 @@ docker run --rm -d --pull always --name auto-vpn \
    - `VULTR_API_KEY` or `LINODE_API_KEY`: VPS provider API key
    - `SELF_URL`: Your Render service URL (e.g., https://your-service.onrender.com)
 
-   Optional:
-   - `DATABASE_URL`: PostgreSQL connection string (recommended for persistence)
+  Database Configuration:
+   - `DATABASE_URL`: Database connection string (see details below)
 
 3. **Deploy and Access**
    - Service will be available at your Render URL
    - Auto-ping feature keeps the service active on free tier
+
+### ⚠️ Important Database Considerations
+
+The application supports two database types:
+
+1. **SQLite** (default):
+`DATABASE_URL=sqlite:///data_layer/data_layer.db`
+
+⚠️ **WARNING**: Using SQLite on Render's free tier is NOT recommended as:
+- Database will be lost on service restarts
+- Data doesn't persist between deployments
+- Free tier instances can restart randomly
+
+2. **PostgreSQL** (recommended for Render):
+`DATABASE_URL=postgresql://user:password@host:5432/database`
+
+✅ **Recommended**: Use external PostgreSQL service:
+- [Supabase](https://supabase.com) offers free PostgreSQL databases
+- Data persists across deployments and restarts
+- More reliable for production use
 
 ## 💻 Environment Variables
 
@@ -65,7 +85,7 @@ docker run --rm -d --pull always --name auto-vpn \
 | VULTR_API_KEY | * | Vultr API key |
 | LINODE_API_KEY | * | Linode API key |
 | SELF_URL | No | Service URL for auto-ping |
-| DATABASE_URL | No | PostgreSQL connection string |
+| DATABASE_URL | No | Database connection string |
 
 \* Either VULTR_API_KEY or LINODE_API_KEY is required
 
