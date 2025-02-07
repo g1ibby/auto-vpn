@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from peewee import (
     SqliteDatabase,
     PostgresqlDatabase,
@@ -9,6 +11,13 @@ from auto_vpn.core.utils import setup_logger
 
 logger = setup_logger(name="db.db")
 
+
+class DatabaseInitializationError(Exception):
+    """Custom exception for database initialization errors"""
+
+    pass
+
+
 class Database:
     _instance = None
 
@@ -16,54 +25,116 @@ class Database:
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
             cls._instance.initialized = False
-            cls._instance.proxy = Proxy() 
+            cls._instance.proxy = Proxy()
         return cls._instance
 
-    def init_db(self, db_url: str = 'sqlite:///data_layer.db'):
-        logger.info(f"Initializing database with URL: {db_url}")
-        parsed_url = urlparse(db_url)
-        
-        if parsed_url.scheme == 'sqlite':
-            pragmas = {
-                'foreign_keys': 1,
-                'journal_mode': 'wal',
-                'cache_size': -1024 * 64,
-            }
-            path = parsed_url.path[1:] if parsed_url.path.startswith('/') else parsed_url.path
-            database = SqliteDatabase(path, pragmas=pragmas)
-        
-        elif parsed_url.scheme == 'postgresql':
-            database = PostgresqlDatabase(
-                database=parsed_url.path.lstrip('/'),
-                user=parsed_url.username,
-                password=parsed_url.password,
-                host=parsed_url.hostname,
-                port=parsed_url.port or 5432,
-            )
-        else:
-            raise ValueError("Unsupported database scheme. Use 'sqlite' or 'postgresql'.")
+    def init_db(self, db_url: str):
+        """
+        Initialize the database connection.
 
-        self.proxy.initialize(database)
-        self.db = database
-        self.initialized = True
-
-        # Replace create_tables with migration
-        from peewee_migrate import Router
-        router = Router(self.db)
- 
-        # Run all pending migrations
+        Args:
+            db_url: Database URL string
+        Raises:
+            DatabaseInitializationError: If database initialization fails
+            ValueError: If database scheme is unsupported
+        """
         try:
-            router.run()
-            logger.info("Database migrations completed successfully")
-        except Exception as e:
-            logger.error(f"Error running migrations: {e}")
+            logger.info(f"Initializing database with URL: {db_url}")
+            parsed_url = urlparse(db_url)
+
+            if parsed_url.scheme == "sqlite":
+                pragmas = {
+                    "foreign_keys": 1,
+                    "journal_mode": "wal",
+                    "cache_size": -1024 * 64,
+                }
+                path = (
+                    parsed_url.path[1:]
+                    if parsed_url.path.startswith("/")
+                    else parsed_url.path
+                )
+
+                # Ensure directory exists before creating SQLite database
+                self._ensure_sqlite_directory(path)
+
+                try:
+                    database = SqliteDatabase(path, pragmas=pragmas)
+                    logger.info(f"Successfully initialized SQLite database at: {path}")
+                except Exception as e:
+                    error_msg = f"Failed to initialize SQLite database: {str(e)}"
+                    logger.error(error_msg)
+                    raise DatabaseInitializationError(error_msg) from e
+
+            elif parsed_url.scheme == "postgresql":
+                try:
+                    database = PostgresqlDatabase(
+                        database=parsed_url.path.lstrip("/"),
+                        user=parsed_url.username,
+                        password=parsed_url.password,
+                        host=parsed_url.hostname,
+                        port=parsed_url.port or 5432,
+                    )
+                    logger.info(
+                        f"Successfully initialized PostgreSQL database at: {parsed_url.hostname}"
+                    )
+                except Exception as e:
+                    error_msg = f"Failed to initialize PostgreSQL database: {str(e)}"
+                    logger.error(error_msg)
+                    raise DatabaseInitializationError(error_msg) from e
+            else:
+                error_msg = "Unsupported database scheme. Use 'sqlite' or 'postgresql'."
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            self.proxy.initialize(database)
+            self.db = database
+            self.initialized = True
+
+            # Handle migrations
+            try:
+                from peewee_migrate import Router
+
+                router = Router(self.db)
+                router.run()
+                logger.info("Database migrations completed successfully")
+            except Exception as e:
+                error_msg = f"Error running migrations: {str(e)}"
+                logger.error(error_msg)
+                raise DatabaseInitializationError(error_msg) from e
+
+        except (DatabaseInitializationError, ValueError) as e:
+            # Re-raise these exceptions as they're already properly formatted
             raise
+        except Exception as e:
+            # Catch any other unexpected errors
+            error_msg = f"Unexpected error during database initialization: {str(e)}"
+            logger.error(error_msg)
+            raise DatabaseInitializationError(error_msg) from e
+
+    def _ensure_sqlite_directory(self, path: str) -> None:
+        """
+        Ensure the directory for SQLite database exists.
+
+        Args:
+            path: The database file path
+        Raises:
+            DatabaseInitializationError: If directory creation fails
+        """
+        try:
+            directory = os.path.dirname(path)
+            if directory:
+                Path(directory).mkdir(parents=True, exist_ok=True)
+                logger.info(f"Ensured SQLite directory exists: {directory}")
+        except Exception as e:
+            error_msg = f"Failed to create SQLite directory: {str(e)}"
+            logger.error(error_msg)
+            raise DatabaseInitializationError(error_msg) from e
 
     @contextmanager
     def connection(self):
         if not self.initialized:
             raise RuntimeError("Database not initialized. Call init_db first.")
-        
+
         # Check if connection is already open
         if not self.db.is_closed():
             # Use existing connection
@@ -77,5 +148,5 @@ class Database:
                 if not self.db.is_closed():
                     self.db.close()
 
-db_instance = Database()
 
+db_instance = Database()

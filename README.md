@@ -20,12 +20,7 @@ This project provides an effortless way to spin up your own temporary, cost-effe
 
 ### Local Deployment (Docker)
 
-1. Create a data directory:
-```bash
-mkdir data_layer
-```
-
-2. Run the container:
+1. Run the container:
 ```bash
 docker run --rm -d --pull always --name auto-vpn \
   -e USERNAME=admin \
@@ -36,7 +31,7 @@ docker run --rm -d --pull always --name auto-vpn \
   ghcr.io/g1ibby/auto-vpn
 ```
 
-3. Access the interface at `http://localhost:8501`
+2. Access the interface at `http://localhost:8501`
 
 ### Free Cloud Deployment (Render.com)
 

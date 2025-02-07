@@ -13,9 +13,19 @@ from auto_vpn.providers.provider_factory import CloudProviderFactory
 from auto_vpn.providers.provider_base import CloudProvider
 from auto_vpn.providers.provider_types import Region, InstanceType
 from .wg_manager import WireGuardManager
-from .utils import generate_projectname, generate_peername, setup_logger, generate_public_key, generate_ssh_keypair, serialize_private_key, deserialize_private_key, get_public_key_text
+from .utils import (
+    generate_projectname,
+    generate_peername,
+    setup_logger,
+    generate_public_key,
+    generate_ssh_keypair,
+    serialize_private_key,
+    deserialize_private_key,
+    get_public_key_text,
+)
 
 logger = setup_logger(name="core.app")
+
 
 class App:
     """
@@ -23,36 +33,32 @@ class App:
     and VPN Managers to manage cloud providers, servers, and VPN peers.
     """
 
-    SUPPORTED_PROVIDERS = {'vultr', 'linode'}
+    SUPPORTED_PROVIDERS = {"vultr", "linode"}
     INACTIVITY_THRESHOLD_KEY = "inactivity_threshold"
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
-    def __init__(self, 
-             db_url: str = 'sqlite:///data_layer/data_layer.db', 
-             inactivity_threshold: Optional[timedelta] = None,
-             vultr_api_key: Optional[str] = None,
-             linode_api_key: Optional[str] = None):
-        """
-        Initialize the Application Layer with database connection.
-        
-        :param db_path: Path to the SQLite database file.
-        """
+    def __init__(
+        self,
+        db_url: str,
+        inactivity_threshold: Optional[timedelta] = None,
+        vultr_api_key: Optional[str] = None,
+        linode_api_key: Optional[str] = None,
+    ):
         db_instance.init_db(db_url=db_url)
 
         self.data_layer = Repository()
         self.minimum_server_age = timedelta(minutes=15)
 
         # Store API keys
-        self.provider_credentials = {
-            'vultr': vultr_api_key,
-            'linode': linode_api_key
-        }
+        self.provider_credentials = {"vultr": vultr_api_key, "linode": linode_api_key}
 
         # Initialize inactivity threshold setting if it doesn't exist
         try:
             self.data_layer.get_setting(self.INACTIVITY_THRESHOLD_KEY)
         except ValueError:
-            self.data_layer.set_setting(self.INACTIVITY_THRESHOLD_KEY, self.DEFAULT_INACTIVITY_THRESHOLD)
+            self.data_layer.set_setting(
+                self.INACTIVITY_THRESHOLD_KEY, self.DEFAULT_INACTIVITY_THRESHOLD
+            )
 
         # If inactivity_threshold is provided, update the setting
         if inactivity_threshold is not None:
@@ -61,7 +67,7 @@ class App:
     def get_inactivity_threshold(self) -> timedelta:
         """
         Get the current inactivity threshold setting.
-        
+
         :return: Current inactivity threshold as timedelta
         """
         return self.data_layer.get_setting(self.INACTIVITY_THRESHOLD_KEY)
@@ -69,7 +75,7 @@ class App:
     def set_inactivity_threshold(self, threshold: timedelta) -> None:
         """
         Set a new inactivity threshold.
-        
+
         :param threshold: New threshold value as timedelta
         """
         if not isinstance(threshold, timedelta):
@@ -77,22 +83,24 @@ class App:
         self.data_layer.set_setting(self.INACTIVITY_THRESHOLD_KEY, threshold)
 
         # Reset the cache
-        if hasattr(self, '_cached_threshold'):
-            delattr(self, '_cached_threshold')
-        if hasattr(self, '_threshold_cache_time'):
-            delattr(self, '_threshold_cache_time')
+        if hasattr(self, "_cached_threshold"):
+            delattr(self, "_cached_threshold")
+        if hasattr(self, "_threshold_cache_time"):
+            delattr(self, "_threshold_cache_time")
 
     @property
     def inactivity_threshold(self) -> timedelta:
         """
         Property to access the current inactivity threshold.
         Cached for 10 minutes to avoid frequent database access.
-        
+
         :return: Current inactivity threshold as timedelta
         """
-        if not hasattr(self, '_cached_threshold') or \
-           not hasattr(self, '_threshold_cache_time') or \
-           datetime.now() - self._threshold_cache_time > timedelta(minutes=10):
+        if (
+            not hasattr(self, "_cached_threshold")
+            or not hasattr(self, "_threshold_cache_time")
+            or datetime.now() - self._threshold_cache_time > timedelta(minutes=10)
+        ):
             self._cached_threshold = self.get_inactivity_threshold()
             self._threshold_cache_time = datetime.now()
         return self._cached_threshold
@@ -108,7 +116,7 @@ class App:
         provider = region.provider.lower()
         if provider not in self.SUPPORTED_PROVIDERS:
             raise ValueError(f"Unsupported provider: {provider}")
-        
+
         if not self.provider_credentials.get(provider):
             raise ValueError(f"No API key provided for {provider}")
 
@@ -118,9 +126,13 @@ class App:
         private_key, public_key_text = generate_ssh_keypair()
 
         # Initialize the appropriate InfrastructureManager based on provider type
-        provider_manager = self._initialize_provider_manager(provider, project_name, public_key_text)
+        provider_manager = self._initialize_provider_manager(
+            provider, project_name, public_key_text
+        )
         if not provider_manager:
-            raise ValueError(f"No manager available for provider type: {provider.provider_type}")
+            raise ValueError(
+                f"No manager available for provider type: {provider.provider_type}"
+            )
 
         # Deploy the Pulumi stack to create the server
         up_result = provider_manager.up(location=region.id, server_type=type.id)
@@ -128,20 +140,22 @@ class App:
         stack_state = provider_manager.export_stack_state()
 
         # Extract outputs from Pulumi stack
-        instance_ip = up_result.outputs.get('instance_ip').value
+        instance_ip = up_result.outputs.get("instance_ip").value
 
         # Add server to the database
         server = self.data_layer.create_server(
             provider=provider,
             project_name=project_name,
             ip_address=instance_ip,
-            username='root',  # Enforce 'root' as the SSH username
-            ssh_private_key=serialize_private_key(private_key),  # Placeholder, as SSH key management is removed
+            username="root",  # Enforce 'root' as the SSH username
+            ssh_private_key=serialize_private_key(
+                private_key
+            ),  # Placeholder, as SSH key management is removed
             location=region.id,
             stack_state=json.dumps(stack_state, indent=2),
             server_type=type.id,
             country=region.country,
-            price_per_month=float(type.price_monthly)
+            price_per_month=float(type.price_monthly),
         )
         return server
 
@@ -168,10 +182,7 @@ class App:
         public_key_text = get_public_key_text(private_key)
 
         provider_manager = self._initialize_provider_manager(
-                server.provider, 
-                server.project_name, 
-                public_key_text, 
-                stack_state_loaded
+            server.provider, server.project_name, public_key_text, stack_state_loaded
         )
         if not provider_manager:
             raise ValueError(f"No manager available for provider: {server.provider}")
@@ -214,7 +225,7 @@ class App:
 
         # Get all existing servers
         servers = self.get_all_servers()
-        
+
         # Try to find a region where we already have a server
         server = None
         selected_region = None
@@ -226,26 +237,38 @@ class App:
                 selected_instance = instance
                 server = next(srv for srv in servers if srv.location == region.id)
                 break
-        
+
         # If no existing server found, use the first result
         if not selected_region:
             selected_region, selected_instance = search_results[0]
-            
-        region_id = selected_region.id
-        region_name = f"{selected_region.city}, {selected_region.country}" if selected_region.city else selected_region.country
 
-        logger.debug(f"Selected region: {region_name} ({region_id}), {selected_region.provider}")
-        logger.debug(f"Selected instance: {selected_instance.id} ({selected_instance.price_monthly}/mo)")
+        region_id = selected_region.id
+        region_name = (
+            f"{selected_region.city}, {selected_region.country}"
+            if selected_region.city
+            else selected_region.country
+        )
+
+        logger.debug(
+            f"Selected region: {region_name} ({region_id}), {selected_region.provider}"
+        )
+        logger.debug(
+            f"Selected instance: {selected_instance.id} ({selected_instance.price_monthly}/mo)"
+        )
 
         if not server:
             # No server in the desired region, create one
             try:
                 server = self.create_server(selected_region, selected_instance)
-                logger.info(f"Created server in region {region_name} - {region_id} with IP {server.ip_address}")
+                logger.info(
+                    f"Created server in region {region_name} - {region_id} with IP {server.ip_address}"
+                )
             except Exception as e:
                 raise ValueError(f"Error creating server: {e}")
         else:
-            logger.info(f"Using existing server in region {region_name} with IP {server.ip_address}")
+            logger.info(
+                f"Using existing server in region {region_name} with IP {server.ip_address}"
+            )
 
         # Create a VPN peer on the server
         try:
@@ -266,7 +289,7 @@ class App:
     def clear_unused_servers(self) -> None:
         """
         Clears unused servers based on WireGuard peer handshakes.
-        
+
         This function performs the following steps:
         1. Retrieves all servers along with their associated VPN peers.
         2. Skips servers younger than minimum_server_age.
@@ -276,7 +299,7 @@ class App:
                 - Last handshake older than inactivity_threshold, or
                 - No handshake and were created over inactivity_threshold ago.
         4. Deletes the server if the above conditions are met.
-        
+
         All time calculations are performed in UTC.
         """
         servers_with_peers = self.list_servers_with_peers()
@@ -285,13 +308,15 @@ class App:
         minimum_age_time = current_time - self.minimum_server_age
 
         for server_entry in servers_with_peers:
-            server = server_entry['server']
-            peers = server_entry['peers']
+            server = server_entry["server"]
+            peers = server_entry["peers"]
 
             # Skip young servers
             server_age = server.created_at.replace(tzinfo=pytz.UTC)
             if server_age > minimum_age_time:
-                logger.debug(f"Skipping server {server.ip_address} - too young (age: {current_time - server_age})")
+                logger.debug(
+                    f"Skipping server {server.ip_address} - too young (age: {current_time - server_age})"
+                )
                 continue
 
             ssh_private_key = deserialize_private_key(server.ssh_private_key)
@@ -307,7 +332,9 @@ class App:
                 # Get the latest handshakes for all peers on the server
                 handshakes = wireguard_manager.get_latest_handshakes()
 
-                if self._should_delete_server(peers, handshakes, activity_threshold_time):
+                if self._should_delete_server(
+                    peers, handshakes, activity_threshold_time
+                ):
                     try:
                         self.delete_server(server.id)
                         logger.info(
@@ -322,12 +349,12 @@ class App:
     def _should_delete_server(self, peers, handshakes, activity_threshold_time) -> bool:
         """
         Determines if a server should be deleted based on peer activity.
-        
+
         Args:
             peers: List of VPNPeer objects
             handshakes: Dictionary of public_key -> last_handshake_time
             activity_threshold_time: datetime marking the threshold for inactivity
-            
+
         Returns:
             bool: True if the server should be deleted, False otherwise
         """
@@ -337,12 +364,12 @@ class App:
         for peer in peers:
             handshake_time = handshakes.get(peer.public_key)
             logger.debug(f"Peer {peer.peer_name} - Last Handshake: {handshake_time}")
-            
+
             if handshake_time:
                 # Ensure handshake_time is timezone-aware
                 if handshake_time.tzinfo is None:
                     handshake_time = handshake_time.replace(tzinfo=pytz.UTC)
-                    
+
                 # Check if the last handshake was within the activity threshold
                 if handshake_time >= activity_threshold_time:
                     return False
@@ -407,9 +434,7 @@ class App:
         server = peer.server
         ssh_private_key = deserialize_private_key(server.ssh_private_key)
         wireguard_manager = WireGuardManager(
-            hostname=server.ip_address,
-            username='root',
-            private_key=ssh_private_key
+            hostname=server.ip_address, username="root", private_key=ssh_private_key
         )
 
         # Remove the VPN peer
@@ -450,7 +475,13 @@ class App:
 
     # ----------------- Utility Methods ----------------- #
 
-    def _initialize_provider_manager(self, provider: str, project_name: str, ssh_public_key: str, stack_state: Optional[Dict[str, Any]] = None) -> Optional[InfrastructureManager]:
+    def _initialize_provider_manager(
+        self,
+        provider: str,
+        project_name: str,
+        ssh_public_key: str,
+        stack_state: Optional[Dict[str, Any]] = None,
+    ) -> Optional[InfrastructureManager]:
         """
         Initialize the InfrastructureManager for a given provider.
         :param provider: Provider type ('vultr' or 'linode')
@@ -458,19 +489,19 @@ class App:
         :return: An instance of InfrastructureManager or its subclass
         """
         provider = provider.lower()
-        if provider == 'vultr':
+        if provider == "vultr":
             return VultrManager(
-                vultr_api_key=self.provider_credentials['vultr'],
+                vultr_api_key=self.provider_credentials["vultr"],
                 ssh_public_key=ssh_public_key,
                 project_name=project_name,
-                stack_state=stack_state
+                stack_state=stack_state,
             )
-        elif provider == 'linode':
+        elif provider == "linode":
             return LinodeManager(
-                linode_api_key=self.provider_credentials['linode'],
+                linode_api_key=self.provider_credentials["linode"],
                 ssh_public_key=ssh_public_key,
                 project_name=project_name,
-                stack_state=stack_state
+                stack_state=stack_state,
             )
         return None
 
@@ -483,7 +514,9 @@ class App:
         for provider_name, credentials in self.provider_credentials.items():
             if provider_name in self.SUPPORTED_PROVIDERS and credentials is not None:
                 try:
-                    provider = CloudProviderFactory.get_provider(provider_name, credentials)
+                    provider = CloudProviderFactory.get_provider(
+                        provider_name, credentials
+                    )
                     if provider:
                         providers.append(provider)
                 except ValueError as e:
@@ -498,7 +531,7 @@ class App:
         """
         all_regions = []
         errors = []
-        
+
         for provider in self._get_all_providers():
             try:
                 regions = provider.get_regions()
@@ -507,14 +540,20 @@ class App:
                 errors.append(f"{provider.__class__.__name__}: {e}")
 
         if not all_regions and errors:
-            raise ValueError(f"Failed to retrieve regions from any provider: {'; '.join(errors)}")
+            raise ValueError(
+                f"Failed to retrieve regions from any provider: {'; '.join(errors)}"
+            )
 
         # Remove duplicates based on city and country
         unique_regions = {}
         for region in all_regions:
             # Extract base city name (remove numbers and extra spaces)
-            city = region.city if region.city else ''
-            base_city = ' '.join(word for word in city.split() if not any(char.isdigit() for char in word))
+            city = region.city if region.city else ""
+            base_city = " ".join(
+                word
+                for word in city.split()
+                if not any(char.isdigit() for char in word)
+            )
             base_city = base_city.strip()
 
             key = (region.country, base_city)
@@ -527,12 +566,11 @@ class App:
             ):
                 unique_regions[key] = region
 
-        return sorted(
-            unique_regions.values(),
-            key=lambda r: (r.country, r.city or '')
-        )
+        return sorted(unique_regions.values(), key=lambda r: (r.country, r.city or ""))
 
-    def search_regions(self, search_term: str) -> List[Tuple[Region, Optional[InstanceType]]]:
+    def search_regions(
+        self, search_term: str
+    ) -> List[Tuple[Region, Optional[InstanceType]]]:
         """
         Search for regions by city or country name/code across all providers,
         including the smallest instance type available in each region.
@@ -555,10 +593,10 @@ class App:
         return sorted(
             results,
             key=lambda x: (
-                x[1].price_monthly if x[1] else float('inf'),
+                x[1].price_monthly if x[1] else float("inf"),
                 x[0].country,
-                x[0].city or ''
-            )
+                x[0].city or "",
+            ),
         )
 
     # ----------------- Additional Methods ----------------- #
