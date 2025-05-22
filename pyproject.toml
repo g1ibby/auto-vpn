@@ -8,7 +8,7 @@ packages = [{include = "auto_vpn", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12.1"
-cryptography = "^44.0.1"
+cryptography = "^45.0.2"
 ediri-vultr = "2.22.1"
 paramiko = "^3.5.0"
 peewee = "^3.17.8"
