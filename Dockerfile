@@ -7,22 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-ENV POETRY_HOME=/opt/poetry
-ENV POETRY_VERSION=1.7.1
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry --version
+# Install uv
+ENV UV_VERSION=0.7.3
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Set working directory
 WORKDIR /app
 
-# Copy only dependency files first to leverage cache
-COPY pyproject.toml poetry.lock ./
-
-# Configure poetry to not create virtual environment
-RUN poetry config virtualenvs.create false
+# Copy dependency files
+COPY pyproject.toml ./
 
 # Stage 2: Install Pulumi
 FROM builder as pulumi-installer
@@ -46,19 +39,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy Pulumi from pulumi-installer stage
 COPY --from=pulumi-installer /root/.pulumi/bin/pulumi /usr/local/bin/
 
+# Copy uv from builder
+COPY --from=builder /root/.cargo/bin/uv /usr/local/bin/
+
 # Set working directory
 WORKDIR /app
 
-# Copy project files first
-COPY pyproject.toml poetry.lock ./
+# Copy dependency files
+COPY pyproject.toml ./
 
-# Copy Poetry from builder
-COPY --from=builder /opt/poetry /opt/poetry
-RUN ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
-
-# Configure poetry and install dependencies
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-root
+# Install dependencies
+RUN uv pip install .
 
 # Copy application code
 COPY src/auto_vpn ./auto_vpn

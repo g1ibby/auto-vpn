@@ -1,7 +1,40 @@
-.PHONY: install test lint format clean run run-debug docker-build docker-run
+.PHONY: setup venv install install-dev test lint format clean run run-debug docker-build docker-run docker-stop docker-logs docker-shell docker-clean
 
-run:
-	streamlit run src/auto_vpn/web/web.py
+VENV := .venv
+
+venv:
+	uv venv $(VENV)
+
+setup: venv
+	uv pip install -U pip
+
+install: setup
+	uv pip install -e .
+
+install-dev: setup
+	uv pip install -e ".[dev]"
+
+run: install
+	. $(VENV)/bin/activate && streamlit run src/auto_vpn/web/web.py
+
+test: install-dev
+	. $(VENV)/bin/activate && pytest
+
+lint: install-dev
+	. $(VENV)/bin/activate && black src tests
+	. $(VENV)/bin/activate && isort src tests
+	. $(VENV)/bin/activate && flake8 src tests
+	. $(VENV)/bin/activate && mypy src tests
+
+format: install-dev
+	. $(VENV)/bin/activate && black src tests
+	. $(VENV)/bin/activate && isort src tests
+
+clean:
+	rm -rf $(VENV)
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
 
 docker-build:
 	docker build -t auto-vpn .

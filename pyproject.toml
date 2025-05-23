@@ -1,42 +1,48 @@
-[tool.poetry]
+[project]
 name = "auto-vpn"
 version = "0.1.0"
 description = "Auto-VPN: On-Demand WireGuard VPN Server Manager"
-authors = ["Sergei Varibrus"]
+authors = [
+    {name = "Sergei Varibrus"}
+]
 readme = "README.md"
-packages = [{include = "auto_vpn", from = "src"}]
+requires-python = ">=3.12.1"
+dependencies = [
+    "cryptography>=44.0.0",
+    "ediri-vultr==2.22.1",
+    "paramiko>=3.5.0",
+    "peewee>=3.17.8",
+    "petname>=2.6",
+    "pulumi>=3.140.0",
+    "pycountry>=24.6.1",
+    "python-dotenv>=1.0.1",
+    "pytz>=2024.2",
+    "requests>=2.32.3",
+    "streamlit>=1.40.1",
+    "streamlit-authenticator>=0.4.1",
+    "psycopg2-binary>=2.9.10",
+    "pydantic-settings>=2.6.1",
+    "pulumi-linode>=4.30.1",
+    "peewee-migrate>=1.13.0",
+    "countryflag>=0.1.2b3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12.1"
-cryptography = "^44.0.0"
-ediri-vultr = "2.22.1"
-paramiko = "^3.5.0"
-peewee = "^3.17.8"
-petname = "^2.6"
-pulumi = "^3.140.0"
-pycountry = "^24.6.1"
-python-dotenv = "^1.0.1"
-pytz = "^2024.2"
-requests = "^2.32.3"
-streamlit = "^1.40.1"
-streamlit-authenticator = "^0.4.1"
-psycopg2-binary = "^2.9.10"
-pydantic-settings = "^2.6.1"
-pulumi-linode = "^4.30.1"
-peewee-migrate = "^1.13.0"
-countryflag = "^0.1.2b3"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
-black = "^24.2.0"
-isort = "^5.13.2"
-flake8 = "^7.0.0"
-mypy = "^1.8.0"
-pytest-cov = "^4.1.0"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "black>=24.2.0",
+    "isort>=5.13.2",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "pytest-cov>=4.1.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/auto_vpn"]
 
 [tool.black]
 line-length = 88
