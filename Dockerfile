@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 ENV UV_VERSION=0.7.3
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
@@ -40,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=pulumi-installer /root/.pulumi/bin/pulumi /usr/local/bin/
 
 # Copy uv from builder
-COPY --from=builder /root/.cargo/bin/uv /usr/local/bin/
+COPY --from=builder /root/.local/bin/uv /usr/local/bin/
 
 # Set working directory
 WORKDIR /app
