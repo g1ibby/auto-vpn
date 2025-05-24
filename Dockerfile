@@ -50,7 +50,7 @@ WORKDIR /app
 COPY pyproject.toml ./
 
 # Install dependencies
-RUN uv pip install .
+RUN uv pip install --system .
 
 # Copy application code
 COPY src/auto_vpn ./auto_vpn
