@@ -1,7 +1,7 @@
 
 [project]
 name = "auto-vpn"
-version = "0.1.0"
+version = "0.0.11"
 description = "Auto-VPN: On-Demand WireGuard VPN Server Manager"
 authors = [
     {name = "Sergei Varibrus"}
@@ -38,6 +38,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.11.11",
     "pre-commit>=4.2.0",
+    "bump-my-version>=1.1.4",
 ]
 
 [build-system]

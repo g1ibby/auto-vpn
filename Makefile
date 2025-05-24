@@ -1,4 +1,4 @@
-.PHONY: setup venv install install-dev test lint format clean run run-debug docker-build docker-run docker-stop docker-logs docker-shell docker-clean
+.PHONY: setup venv install install-dev test lint format clean run run-debug docker-build docker-run docker-stop docker-logs docker-shell docker-clean bump-patch bump-minor bump-major bump-push
 
 VENV := .venv
 
@@ -57,3 +57,16 @@ docker-clean:
 	docker stop auto-vpn || true
 	docker rm auto-vpn || true
 	docker rmi auto-vpn || true
+
+# Version bumping
+bump-patch: install-dev
+	bump-my-version bump patch
+
+bump-minor: install-dev
+	bump-my-version bump minor
+
+bump-major: install-dev
+	bump-my-version bump major
+
+bump-push:
+	git push origin main --tags
