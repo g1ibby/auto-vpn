@@ -49,6 +49,7 @@ WORKDIR /app
 
 # Copy dependency files
 COPY pyproject.toml ./
+COPY README.md ./
 
 # Install dependencies
 RUN uv pip install --system .
