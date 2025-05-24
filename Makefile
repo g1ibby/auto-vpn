@@ -1,4 +1,4 @@
-.PHONY: setup venv install install-dev test lint format clean run run-debug docker-build docker-run docker-stop docker-logs docker-shell docker-clean bump-patch bump-minor bump-major bump-push
+.PHONY: setup venv install install-dev test lint format clean run run-debug docker-build docker-run docker-stop docker-logs docker-shell docker-clean bump-patch bump-minor bump-major bump-push update-plugins
 
 VENV := .venv
 
@@ -70,3 +70,7 @@ bump-major: install-dev
 
 bump-push:
 	git push origin main --tags
+
+# Update Pulumi plugins
+update-plugins:
+	python3 update_pulumi_plugins.py

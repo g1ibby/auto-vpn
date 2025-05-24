@@ -93,4 +93,4 @@ class LinodeManager(InfrastructureManager):
         Specify the required Pulumi plugins for Linode.
         :return: A dictionary with provider names as keys and versions as values.
         """
-        return {"linode": "4.30.1"}  # Use the latest stable version
+        return {"linode": "4.39.0"}  # Use the latest stable version

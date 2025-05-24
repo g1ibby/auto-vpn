@@ -1,7 +1,7 @@
 
 [project]
 name = "auto-vpn"
-version = "0.1.0"
+version = "0.0.11"
 description = "Auto-VPN: On-Demand WireGuard VPN Server Manager"
 authors = [
     {name = "Sergei Varibrus"}
@@ -14,7 +14,7 @@ dependencies = [
     "paramiko>=3.5.0",
     "peewee>=3.17.8",
     "petname>=2.6",
-    "pulumi>=3.171.0",
+    "pulumi>=3.140.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
     "pytz>=2024.2",
@@ -23,7 +23,7 @@ dependencies = [
     "streamlit-authenticator>=0.4.1",
     "psycopg2-binary>=2.9.10",
     "pydantic-settings>=2.6.1",
-    "pulumi-linode>=4.30.1",
+    "pulumi-linode>=4.39.0",
     "peewee-migrate>=1.13.0",
     "countryflag>=0.1.2b3",
 ]

@@ -84,4 +84,4 @@ class VultrManager(InfrastructureManager):
 
         :return: A dictionary with provider names as keys and versions as values.
         """
-        return {"vultr": "2.22.1"}
+        return {"vultr": "2.23.1"}
