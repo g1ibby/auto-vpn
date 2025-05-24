@@ -25,10 +25,12 @@ class LinodeProvider(CloudProvider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def _parse_location_label(self, label: str) -> tuple[str | None, str]:
+    def _parse_location_label(self, label: str) -> str | None:
         """
-        Parse location label to extract city and country
-        Example: "Tokyo 2, JP" -> ("Tokyo", "JP")
+        Parse location label to extract the city name from a Linode region label.
+        The city name is typically the part of the label before the last comma.
+        Example: "Newark, NJ" -> "Newark"
+        Example: "Tokyo 2, JP" -> "Tokyo 2"
         """
         try:
             location, _ = label.rsplit(",", 1)
