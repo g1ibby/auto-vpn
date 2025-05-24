@@ -150,10 +150,8 @@ class App:
             provider=provider,
             project_name=project_name,
             ip_address=instance_ip,
-            username="root",  # Enforce 'root' as the SSH username
-            ssh_private_key=serialize_private_key(
-                private_key
-            ),  # Placeholder, as SSH key management is removed
+            username="root",
+            ssh_private_key=serialize_private_key(private_key),
             location=region.id,
             stack_state=json.dumps(stack_state, indent=2),
             server_type=type.id,

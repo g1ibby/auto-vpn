@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Script to update Pulumi plugins to their latest versions.
-Downloads the latest versions of Linode and Vultr plugins for both Linux and Darwin platforms.
+Downloads the latest versions of Linode and Vultr plugins for Linux and Darwin platforms,
+supporting both amd64 and arm64 architectures when available.
 """
 
 import json
@@ -17,12 +18,12 @@ PLUGIN_CONFIGS = {
     "linode": {
         "repo": "pulumi/pulumi-linode",
         "prefix": "pulumi-resource-linode-v",
-        "platforms": ["darwin-amd64", "linux-amd64"],
+        "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
     },
     "vultr": {
         "repo": "dirien/pulumi-vultr",
         "prefix": "pulumi-resource-vultr-v",
-        "platforms": ["darwin-amd64", "linux-amd64"],
+        "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
     },
 }
 
@@ -48,6 +49,17 @@ def get_current_version(prefix: str) -> str:
     return "0.0.0"
 
 
+def get_current_platforms(prefix: str, version: str) -> set:
+    """Get the current platforms available for a specific version."""
+    pattern = re.compile(rf"{re.escape(prefix)}{re.escape(version)}-(.+)\.tar\.gz")
+    platforms = set()
+    for file in PLUGINS_DIR.glob(f"{prefix}{version}-*"):
+        match = pattern.match(file.name)
+        if match:
+            platforms.add(match.group(1))
+    return platforms
+
+
 def download_file(url: str, filepath: Path) -> None:
     """Download a file from URL to filepath."""
     print(f"Downloading {filepath.name}...")
@@ -70,41 +82,79 @@ def remove_old_versions(prefix: str, keep_version: str) -> None:
 
 
 def update_plugin(plugin_name: str, config: dict) -> bool:
-    """Update a single plugin to its latest version."""
+    """Update a single plugin to its latest version and download missing platforms."""
     print(f"\n=== Updating {plugin_name} plugin ===")
 
     release = get_latest_release(config["repo"])
     latest_version = release["tag_name"].lstrip("v")
     current_version = get_current_version(config["prefix"])
+    current_platforms = get_current_platforms(config["prefix"], latest_version)
 
     print(f"Current version: {current_version}")
     print(f"Latest version: {latest_version}")
+    print(
+        f"Current platforms: {sorted(current_platforms) if current_platforms else 'none'}"
+    )
 
-    if current_version == latest_version:
-        print(f"✓ {plugin_name} is already up to date")
-        return False
+    version_updated = current_version != latest_version
+
+    # Find available assets
+    available_assets = {asset["name"]: asset for asset in release["assets"]}
 
     # Find and download assets
     assets_downloaded = []
-    for asset in release["assets"]:
-        for platform in config["platforms"]:
-            expected_name = f"{config['prefix']}{latest_version}-{platform}.tar.gz"
-            if asset["name"] == expected_name:
-                filepath = PLUGINS_DIR / asset["name"]
-                download_file(asset["browser_download_url"], filepath)
-                assets_downloaded.append(expected_name)
-                break
+    assets_missing = []
 
-    if len(assets_downloaded) != len(config["platforms"]):
+    for platform in config["platforms"]:
+        expected_name = f"{config['prefix']}{latest_version}-{platform}.tar.gz"
+
+        # Skip if we already have this platform for the latest version
+        if not version_updated and platform in current_platforms:
+            continue
+
+        if expected_name in available_assets:
+            asset = available_assets[expected_name]
+            filepath = PLUGINS_DIR / asset["name"]
+            download_file(asset["browser_download_url"], filepath)
+            assets_downloaded.append(expected_name)
+        else:
+            assets_missing.append(expected_name)
+
+    # Report download results
+    if assets_downloaded:
         print(
-            f"✗ Warning: Expected {len(config['platforms'])} assets but downloaded {len(assets_downloaded)}"
+            f"✓ Downloaded {len(assets_downloaded)} asset(s): {', '.join([name.split('/')[-1] for name in assets_downloaded])}"
         )
+
+    if assets_missing:
+        print(
+            f"⚠ Missing {len(assets_missing)} asset(s): {', '.join([name.split('/')[-1] for name in assets_missing])}"
+        )
+
+    # Check if we're completely up to date
+    if (
+        not assets_downloaded
+        and not assets_missing
+        and current_version == latest_version
+    ):
+        print(f"✓ {plugin_name} is already up to date with all available platforms")
         return False
 
-    # Remove old versions
-    remove_old_versions(config["prefix"], latest_version)
+    # Only proceed with cleanup if we downloaded at least one asset or had a version update
+    if not assets_downloaded and not version_updated:
+        if assets_missing:
+            print(
+                f"⚠ {plugin_name} has missing platforms but they're not available in the latest release"
+            )
+        return False
 
-    print(f"✓ {plugin_name} updated from {current_version} to {latest_version}")
+    # Remove old versions only if we had a version update
+    if version_updated:
+        remove_old_versions(config["prefix"], latest_version)
+        print(f"✓ {plugin_name} updated from {current_version} to {latest_version}")
+    else:
+        print(f"✓ {plugin_name} platforms updated for version {latest_version}")
+
     return True
 
 
