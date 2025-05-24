@@ -70,7 +70,7 @@ class LinodeManager(InfrastructureManager):
         logger.debug(f"Created Linode instance with details: {instance.__dict__}")
 
         # Export necessary instance information
-        pulumi.export("instance_ip", instance.ip_address)
+        pulumi.export("instance_ip", instance.ipv4)
         pulumi.export("instance_id", instance.id)
 
     def set_stack_config(self):
