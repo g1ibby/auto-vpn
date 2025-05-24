@@ -17,6 +17,7 @@ WORKDIR /app
 
 # Copy dependency files
 COPY pyproject.toml ./
+COPY README.md ./
 
 # Stage 2: Install Pulumi
 FROM builder as pulumi-installer
