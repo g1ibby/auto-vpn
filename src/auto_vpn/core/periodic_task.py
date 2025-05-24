@@ -1,16 +1,18 @@
-from threading import Thread
 import time
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Optional
+from threading import Thread
+
 from .utils import setup_logger
 
 logger = setup_logger(name="core.periodic_task")
+
 
 class PeriodicTask:
     def __init__(self, interval_seconds: int, task_function: Callable):
         """
         Initialize a periodic task.
-        
+
         Args:
             interval_seconds (int): Interval between task executions in seconds
             task_function (Callable): The function to be executed periodically
@@ -35,7 +37,7 @@ class PeriodicTask:
         if self.thread:
             self.thread.join()
 
-    def get_last_check_time(self) -> Optional[datetime]:
+    def get_last_check_time(self) -> datetime | None:
         """Get the timestamp of the last check"""
         return self.last_check_time
 
@@ -45,7 +47,7 @@ class PeriodicTask:
             try:
                 # Execute the task
                 self.task_function()
-                
+
                 # Update last check time
                 self.last_check_time = datetime.now()
 

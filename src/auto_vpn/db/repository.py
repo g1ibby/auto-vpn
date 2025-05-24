@@ -1,12 +1,14 @@
 import json
 from datetime import timedelta
+
 from peewee import (
-    IntegrityError,
     DoesNotExist,
+    IntegrityError,
 )
-from typing import List, Optional
+
 from .db import db_instance
-from .models import Server, VPNPeer, Setting
+from .models import Server, Setting, VPNPeer
+
 
 class Repository:
     # Server Methods
@@ -21,7 +23,7 @@ class Repository:
         stack_state: str,
         server_type: str,
         country: str,
-        price_per_month: float | None = None
+        price_per_month: float | None = None,
     ) -> Server:
         """Create a new server."""
         with db_instance.connection():
@@ -36,13 +38,15 @@ class Repository:
                     stack_state=stack_state,
                     server_type=server_type,
                     country=country,
-                    price_per_month=price_per_month
+                    price_per_month=price_per_month,
                 )
                 return server
             except IntegrityError as e:
-                raise ValueError(f"Server with IP '{ip_address}' already exists.") from e
+                raise ValueError(
+                    f"Server with IP '{ip_address}' already exists."
+                ) from e
 
-    def list_servers(self, provider: Optional[str] = None) -> List[Server]:
+    def list_servers(self, provider: str | None = None) -> list[Server]:
         """List all servers or servers for a specific provider."""
         with db_instance.connection():
             if provider is not None:
@@ -66,7 +70,9 @@ class Repository:
                 raise ValueError(f"Server with ID {server_id} does not exist.") from e
 
     # VPN Peer Methods
-    def create_peer(self, server_id: int, peer_name: str, public_key: str, wireguard_config: str) -> VPNPeer:
+    def create_peer(
+        self, server_id: int, peer_name: str, public_key: str, wireguard_config: str
+    ) -> VPNPeer:
         """Create a new VPN peer for a server."""
         with db_instance.connection():
             server = self.get_server_by_id(server_id)
@@ -75,19 +81,18 @@ class Repository:
                     server=server,
                     peer_name=peer_name,
                     public_key=public_key,
-                    wireguard_config=wireguard_config
+                    wireguard_config=wireguard_config,
                 )
                 return peer
             except IntegrityError as e:
-                raise ValueError(f"Peer with name '{peer_name}' already exists for this server.") from e
+                raise ValueError(
+                    f"Peer with name '{peer_name}' already exists for this server."
+                ) from e
 
-    def list_peers(self) -> List[VPNPeer]:
+    def list_peers(self) -> list[VPNPeer]:
         """List all VPN peers with server information."""
         with db_instance.connection():
-            return list(
-                VPNPeer.select(VPNPeer, Server)
-                .join(Server)
-            )
+            return list(VPNPeer.select(VPNPeer, Server).join(Server))
 
     def get_wireguard_config(self, peer_id: int) -> str:
         """Retrieve the WireGuard configuration for a specific peer."""
@@ -110,23 +115,27 @@ class Repository:
                 raise ValueError(f"VPN Peer with ID {peer_id} does not exist.") from e
 
     # Additional Utility Methods
-    def list_servers_with_peers(self) -> List[dict]:
+    def list_servers_with_peers(self) -> list[dict]:
         """List all servers with their associated peers."""
         with db_instance.connection():
             servers = Server.select().prefetch(VPNPeer)
             result = []
             for server in servers:
-                server_info = {
-                    'server': server,
-                    'peers': list(server.peers)
-                }
+                server_info = {"server": server, "peers": list(server.peers)}
                 result.append(server_info)
             return result
 
     def set_setting(self, key: str, value):
         """Add or update a setting."""
-        type_map = {int: "int", float: "float", bool: "bool", dict: "json", 
-                   list: "json", str: "str", timedelta: "timedelta"}
+        type_map = {
+            int: "int",
+            float: "float",
+            bool: "bool",
+            dict: "json",
+            list: "json",
+            str: "str",
+            timedelta: "timedelta",
+        }
         value_type = type(value)
 
         # Determine type and serialize value
@@ -137,7 +146,9 @@ class Repository:
             elif type_str == "bool":
                 value = str(int(value))  # Convert True/False to 1/0
             elif type_str == "timedelta":
-                value = str(int(value.total_seconds()))  # Store timedelta as total seconds
+                value = str(
+                    int(value.total_seconds())
+                )  # Store timedelta as total seconds
             else:
                 value = str(value)
         else:
@@ -145,10 +156,10 @@ class Repository:
 
         with db_instance.connection():
             try:
-                Setting.insert(key=key, value=value, type=type_str) \
-                    .on_conflict(conflict_target=[Setting.key],
-                               preserve=[Setting.value, Setting.type]) \
-                    .execute()
+                Setting.insert(key=key, value=value, type=type_str).on_conflict(
+                    conflict_target=[Setting.key],
+                    preserve=[Setting.value, Setting.type],
+                ).execute()
             except IntegrityError as e:
                 raise ValueError(f"Error saving setting '{key}'.") from e
 

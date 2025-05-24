@@ -1,19 +1,21 @@
-import paramiko
-import time
-import sys
 import re
-import socket
+import sys
+import time
 from datetime import datetime
-from paramiko import SSHException, AuthenticationException
-from typing import Optional, Dict
+
+import paramiko
+from paramiko import AuthenticationException, SSHException
 from paramiko.rsakey import RSAKey
+
 from .utils import setup_logger
 
 logger = setup_logger(name="core.wg_manager")
 
 
 class WireGuardManager:
-    def __init__(self, hostname, username, private_key: RSAKey, max_retries=50, retry_delay=1):
+    def __init__(
+        self, hostname, username, private_key: RSAKey, max_retries=50, retry_delay=1
+    ):
         """
         Initializes the WireGuardManager with SSH connection details and establishes the connection.
         Implements retry logic and handles host key verification.
@@ -34,16 +36,18 @@ class WireGuardManager:
         # Attempt to connect with retry logic
         for attempt in range(1, max_retries + 1):
             try:
-                logger.debug(f"Attempting to connect to {self.hostname} (Attempt {attempt}/{max_retries})...")
+                logger.debug(
+                    f"Attempting to connect to {self.hostname} (Attempt {attempt}/{max_retries})..."
+                )
                 self.client.connect(
                     hostname=self.hostname,
                     username=self.username,
                     pkey=private_key,
-                    timeout=10
+                    timeout=10,
                 )
                 logger.info("SSH connection established.")
                 break
-            except (AuthenticationException, SSHException, socket.error) as e:
+            except (OSError, AuthenticationException, SSHException) as e:
                 logger.debug(f"Connection attempt {attempt} failed: {e}")
                 if attempt < max_retries:
                     logger.debug(f"Retrying in {retry_delay} second(s)...")
@@ -64,7 +68,9 @@ class WireGuardManager:
             self.client.close()
             sys.exit(1)
 
-    def execute_command_with_responses(self, command, responses, completion_indicator=None, timeout=600):
+    def execute_command_with_responses(
+        self, command, responses, completion_indicator=None, timeout=600
+    ):
         """
         Executes a command on the remote server and sends predefined responses to prompts.
 
@@ -80,35 +86,41 @@ class WireGuardManager:
 
             # Clear any initial data
             if shell.recv_ready():
-                initial_output = shell.recv(65535).decode('utf-8', errors='ignore')
+                initial_output = shell.recv(65535).decode("utf-8", errors="ignore")
                 logger.debug(initial_output)
 
             # Send the command
-            shell.send(command + '\n')
+            shell.send(command + "\n")
             logger.debug(f"Executing command: {command}")
 
-            buffer = ''
+            buffer = ""
             response_index = 0
             start_time = time.time()
 
             while True:
                 if shell.recv_ready():
-                    recv = shell.recv(1024).decode('utf-8', errors='ignore')
+                    recv = shell.recv(1024).decode("utf-8", errors="ignore")
                     buffer += recv
 
                     # Check for each prompt and send response
                     if response_index < len(responses):
                         prompt_pattern, response = responses[response_index]
-                        if re.search(prompt_pattern, buffer, re.IGNORECASE | re.MULTILINE):
-                            logger.debug(f"\nDetected prompt: '{prompt_pattern.strip()}', sending response: '{response.strip()}'")
+                        if re.search(
+                            prompt_pattern, buffer, re.IGNORECASE | re.MULTILINE
+                        ):
+                            logger.debug(
+                                f"\nDetected prompt: '{prompt_pattern.strip()}', sending response: '{response.strip()}'"
+                            )
                             shell.send(response)
                             response_index += 1
                             # Clear buffer to prevent re-matching
-                            buffer = ''
+                            buffer = ""
 
                 # Check for completion indicator
                 if completion_indicator and completion_indicator in buffer:
-                    logger.debug(f"\nDetected completion indicator: '{completion_indicator}'")
+                    logger.debug(
+                        f"\nDetected completion indicator: '{completion_indicator}'"
+                    )
                     break
 
                 # Check for timeout
@@ -128,15 +140,15 @@ class WireGuardManager:
         :return: A list of client names.
         """
         try:
-            wg_conf_path = '/etc/wireguard/wg0.conf'
-            with self.sftp.open(wg_conf_path, 'r') as f:
-                wg_conf = f.read().decode('utf-8')
+            wg_conf_path = "/etc/wireguard/wg0.conf"
+            with self.sftp.open(wg_conf_path, "r") as f:
+                wg_conf = f.read().decode("utf-8")
 
             # Extract client names between # BEGIN_PEER and # END_PEER
-            clients = re.findall(r'# BEGIN_PEER (\S+)', wg_conf)
+            clients = re.findall(r"# BEGIN_PEER (\S+)", wg_conf)
             return clients
 
-        except IOError:
+        except OSError:
             logger.warn("WireGuard configuration file not found.")
             return []
 
@@ -154,64 +166,66 @@ class WireGuardManager:
         # First, check if WireGuard is installed by checking for wg0.conf
         wg_conf_exists = False
         try:
-            self.sftp.stat('/etc/wireguard/wg0.conf')
+            self.sftp.stat("/etc/wireguard/wg0.conf")
             wg_conf_exists = True
-        except IOError:
+        except OSError:
             wg_conf_exists = False
 
         if not wg_conf_exists:
             logger.info("WireGuard is not installed. Proceeding with installation.")
             # Define the responses for installation
             responses = [
-                (r'Port \[51820\]:\s*$', '\n'),                         # Accept default port
-                (r'Name \[client\]:\s*$', f'{client_name}\n'),          # Enter client name
-                (r'DNS server \[1\]:\s*$', '3\n'),                      # Select DNS option 3
-                (r'Press any key to continue\.\.\.\s*$', '\n'),          # Press any key
+                (r"Port \[51820\]:\s*$", "\n"),  # Accept default port
+                (r"Name \[client\]:\s*$", f"{client_name}\n"),  # Enter client name
+                (r"DNS server \[1\]:\s*$", "3\n"),  # Select DNS option 3
+                (r"Press any key to continue\.\.\.\s*$", "\n"),  # Press any key
             ]
 
             # Combined installation command
-            install_command = 'wget https://git.io/wireguard -O wireguard-install.sh && bash wireguard-install.sh'
+            install_command = "wget https://git.io/wireguard -O wireguard-install.sh && bash wireguard-install.sh"
 
             # Execute the installation command with responses
             try:
                 self.execute_command_with_responses(
                     command=install_command,
                     responses=responses,
-                    completion_indicator='Finished!',
-                    timeout=900  # 15 minutes
+                    completion_indicator="Finished!",
+                    timeout=900,  # 15 minutes
                 )
             except Exception as e:
                 logger.warn(f"Error during installation: {e}")
                 raise e
 
             # Retrieve and display client.conf
-            client_conf_path = f'/root/{client_name}.conf'
+            client_conf_path = f"/root/{client_name}.conf"
             config_str = self.retrieve_conf(client_conf_path)
             private_key = extract_private_key(config_str)
             return config_str, private_key
         else:
-            logger.info("WireGuard is already installed. Proceeding to add a new client.")
+            logger.info(
+                "WireGuard is already installed. Proceeding to add a new client."
+            )
             # Define the responses for adding a new client
             responses = [
-                (r'Option:\s*$', '1\n'),                                # Select option 1 to add a new client
-                (r'Name:\s*$', f'{client_name}\n'),                     # Enter client name
-                (r'DNS server \[1\]:\s*$', '3\n'),                      # Select DNS option 3
-                (r'Press any key to continue\.\.\.\s*$', '\n'),          # Press any key
+                (r"Option:\s*$", "1\n"),  # Select option 1 to add a new client
+                (r"Name:\s*$", f"{client_name}\n"),  # Enter client name
+                (r"DNS server \[1\]:\s*$", "3\n"),  # Select DNS option 3
+                (r"Press any key to continue\.\.\.\s*$", "\n"),  # Press any key
             ]
 
             # Command to run the WireGuard install script to add a client
-            add_client_command = 'bash wireguard-install.sh'
+            add_client_command = "bash wireguard-install.sh"
 
             # Execute the add client command with responses
             self.execute_command_with_responses(
                 command=add_client_command,
                 responses=responses,
-                completion_indicator=f'{client_name} added.',
-                timeout=600  # 10 minutes
+                completion_indicator=f"{client_name} added.",
+                timeout=600,  # 10 minutes
             )
 
             # Retrieve and display the new client.conf
-            client_conf_path = f'/root/{client_name}.conf'
+            client_conf_path = f"/root/{client_name}.conf"
             config_str = self.retrieve_conf(client_conf_path)
             private_key = extract_private_key(config_str)
             return config_str, private_key
@@ -238,21 +252,24 @@ class WireGuardManager:
 
         # Define the responses for removing a client
         responses = [
-            (r'Option:\s*$', '2\n'),                                # Select option 2 to remove a client
-            (r'Client:\s*$', f'{client_number}\n'),                # Select the client number to remove
-            (r'Confirm .* removal\? \[y/N\]:\s*$', 'y\n'),         # Confirm removal
-            (r'Press any key to continue\.\.\.\s*$', '\n'),         # Press any key
+            (r"Option:\s*$", "2\n"),  # Select option 2 to remove a client
+            (
+                r"Client:\s*$",
+                f"{client_number}\n",
+            ),  # Select the client number to remove
+            (r"Confirm .* removal\? \[y/N\]:\s*$", "y\n"),  # Confirm removal
+            (r"Press any key to continue\.\.\.\s*$", "\n"),  # Press any key
         ]
 
         # Command to run the WireGuard install script to remove a client
-        remove_client_command = 'bash wireguard-install.sh'
+        remove_client_command = "bash wireguard-install.sh"
 
         # Execute the remove client command with responses
         self.execute_command_with_responses(
             command=remove_client_command,
             responses=responses,
-            completion_indicator=f'{client_name} removed!',
-            timeout=600  # 10 minutes
+            completion_indicator=f"{client_name} removed!",
+            timeout=600,  # 10 minutes
         )
 
     def retrieve_conf(self, client_conf_path) -> str:
@@ -264,30 +281,30 @@ class WireGuardManager:
         """
         try:
             logger.debug(f"Retrieving {client_conf_path}...")
-            with self.sftp.open(client_conf_path, 'r') as f:
-                client_conf = f.read().decode('utf-8')
+            with self.sftp.open(client_conf_path, "r") as f:
+                client_conf = f.read().decode("utf-8")
                 return client_conf
-        except IOError:
+        except OSError:
             logger.warn(f"Error: {client_conf_path} not found.")
 
-    def get_latest_handshakes(self) -> Dict[str, Optional[datetime]]:
+    def get_latest_handshakes(self) -> dict[str, datetime | None]:
         """
         Retrieves the latest handshake times for all WireGuard peers.
 
         :return: A dictionary mapping peer public keys to their latest handshake time as datetime objects in UTC.
                  If a handshake has never occurred, the value is None.
         """
-        command = 'wg show all latest-handshakes'
+        command = "wg show all latest-handshakes"
         try:
             stdin, stdout, stderr = self.client.exec_command(command)
-            output = stdout.read().decode('utf-8')
-            error = stderr.read().decode('utf-8')
+            output = stdout.read().decode("utf-8")
+            error = stderr.read().decode("utf-8")
             if error:
                 logger.warn(f"Error executing command: {error}")
                 return {}
 
             handshakes = {}
-            for line in output.strip().split('\n'):
+            for line in output.strip().split("\n"):
                 parts = line.split()
                 if len(parts) != 3:
                     continue  # Skip malformed lines
@@ -295,7 +312,9 @@ class WireGuardManager:
                 try:
                     timestamp = int(timestamp_str)
                     if timestamp == 0:
-                        handshake_time = None  # Indicates that the handshake has never occurred
+                        handshake_time = (
+                            None  # Indicates that the handshake has never occurred
+                        )
                     else:
                         handshake_time = datetime.utcfromtimestamp(timestamp)
                 except ValueError:
@@ -318,6 +337,7 @@ class WireGuardManager:
             logger.info("SFTP session closed.")
         self.client.close()
         logger.info("SSH connection closed.")
+
 
 def extract_private_key(config: str) -> str:
     """

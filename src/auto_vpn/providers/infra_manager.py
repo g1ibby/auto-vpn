@@ -1,15 +1,18 @@
-import uuid
 import json
 import platform
 import tarfile
-from typing import Optional, Dict, Any
-from abc import ABC, abstractmethod
 import tempfile
+import uuid
+from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
+
 from pulumi import automation as auto
+
 from auto_vpn.core.utils import setup_logger
 
 logger = setup_logger(name="providers.infra_manager")
+
 
 class InfrastructureManager(ABC):
     """
@@ -17,12 +20,14 @@ class InfrastructureManager(ABC):
     Provides common functionalities for different cloud providers.
     """
 
-    def __init__(self, project_name=None, stack_state: Optional[str] = None):
+    def __init__(self, project_name=None, stack_state: str | None = None):
         """
         Initialize the InfrastructureManager.
         """
         self.project_name = project_name or f"project-{uuid.uuid4()}"
-        self.stack_name = "dev"  # Default stack name; can be made configurable if needed
+        self.stack_name = (
+            "dev"  # Default stack name; can be made configurable if needed
+        )
 
         # Create temporary directory for Pulumi files
         self.temp_dir = tempfile.mkdtemp(prefix="pulumi_")
@@ -33,8 +38,7 @@ class InfrastructureManager(ABC):
 
         # Create workspace with project settings
         project_settings = auto.ProjectSettings(
-            name=self.project_name,
-            runtime="python"
+            name=self.project_name, runtime="python"
         )
 
         # Create workspace options with our configuration
@@ -46,10 +50,10 @@ class InfrastructureManager(ABC):
                 "PULUMI_CONFIG_PASSPHRASE": "1",
                 "PULUMI_SKIP_UPDATE_CHECK": "true",
                 "PULUMI_BACKEND_URL": "file://" + self.temp_dir,
-                "PULUMI_DISABLE_CLOUD_INTEGRATION": "true"
+                "PULUMI_DISABLE_CLOUD_INTEGRATION": "true",
             },
             project_settings=project_settings,
-            secrets_provider="passphrase"
+            secrets_provider="passphrase",
         )
 
         # Initialize stack
@@ -60,56 +64,57 @@ class InfrastructureManager(ABC):
 
         self.install_plugins()
 
-
     def create_or_select_stack(self):
         """Create or select a Pulumi stack."""
         try:
             # Try to create new stack first
             return auto.Stack.create_or_select(
-                stack_name=self.stack_name,
-                workspace=self.workspace
+                stack_name=self.stack_name, workspace=self.workspace
             )
         except Exception as e:
             logger.warn(f"Stack creation/selection error: {e}")
             raise
 
-    def export_stack_state(self) -> Dict[str, Any]:
+    def export_stack_state(self) -> dict[str, Any]:
         """Export the current stack state as a JSON-serializable dictionary."""
         export_result = self.stack.export_stack()
 
         # Read stack settings from file
         stack_settings = self._read_stack_settings()
-        
+
         return {
             "deployment": {
                 "version": export_result.version,
-                "deployment": export_result.deployment
+                "deployment": export_result.deployment,
             },
-            "config": stack_settings.get("config", {}), 
+            "config": stack_settings.get("config", {}),
             "project_name": self.project_name,
-            "stack_name": self.stack_name
+            "stack_name": self.stack_name,
         }
 
-    def _read_stack_settings(self) -> Dict[str, Any]:
+    def _read_stack_settings(self) -> dict[str, Any]:
         """Read stack settings from Pulumi.<stack>.yaml file."""
         # Try possible extensions (.yaml, .yml, .json)
         extensions = [".yaml", ".yml", ".json"]
         stack_settings_name = f"Pulumi.{self.stack_name}"
-        
+
         for ext in extensions:
-            settings_path = Path(self.workspace.work_dir) / f"{stack_settings_name}{ext}"
+            settings_path = (
+                Path(self.workspace.work_dir) / f"{stack_settings_name}{ext}"
+            )
             if settings_path.exists():
-                with open(settings_path, 'r', encoding='utf-8') as f:
-                    if ext == '.json':
+                with open(settings_path, encoding="utf-8") as f:
+                    if ext == ".json":
                         return json.load(f)
                     else:
                         import yaml
+
                         return yaml.safe_load(f)
-        
+
         # If no settings file found, return empty settings
         return {"config": {}}
 
-    def restore_stack_state(self, state: Dict[str, Any]):
+    def restore_stack_state(self, state: dict[str, Any]):
         """
         Restore a stack from previously exported state.
 
@@ -120,26 +125,24 @@ class InfrastructureManager(ABC):
 
         # Create new stack instead of selecting existing one
         self.stack = auto.Stack.create(
-            stack_name=self.stack_name,
-            workspace=self.workspace
+            stack_name=self.stack_name, workspace=self.workspace
         )
 
         # Save stack settings first
         settings = auto.StackSettings(config=state["config"])
-        self.workspace.save_stack_settings(
-            self.stack_name,
-            settings
-        )
+        self.workspace.save_stack_settings(self.stack_name, settings)
 
         # Create deployment object
         deployment = auto.Deployment(
             version=state["deployment"]["version"],
-            deployment=state["deployment"]["deployment"]
+            deployment=state["deployment"]["deployment"],
         )
 
         # Then import the deployment
         self.stack.import_stack(deployment)
-        logger.info(f"Successfully restored stack '{self.stack_name}' with imported state")
+        logger.info(
+            f"Successfully restored stack '{self.stack_name}' with imported state"
+        )
 
     @staticmethod
     def get_system_arch():
@@ -148,18 +151,10 @@ class InfrastructureManager(ABC):
         machine = platform.machine().lower()
 
         # Map common architectures
-        arch_map = {
-            'x86_64': 'amd64',
-            'aarch64': 'arm64',
-            'arm64': 'arm64'
-        }
+        arch_map = {"x86_64": "amd64", "aarch64": "arm64", "arm64": "arm64"}
 
         # Map system names
-        system_map = {
-            'darwin': 'darwin',
-            'linux': 'linux',
-            'windows': 'windows'
-        }
+        system_map = {"darwin": "darwin", "linux": "linux", "windows": "windows"}
 
         arch = arch_map.get(machine, machine)
         system = system_map.get(system, system)
@@ -199,16 +194,16 @@ class InfrastructureManager(ABC):
     def get_plugins_root_dir(self) -> Path:
         """Get the root directory where plugin archives are stored."""
         current_dir = Path(__file__).resolve()
-        
+
         # Look for project markers (common files/directories that indicate project root)
-        project_markers = ['pytest.ini', 'README.md', 'pulumi_plugins']
-        
+        project_markers = ["pytest.ini", "README.md", "pulumi_plugins"]
+
         # Start from current directory and go up until we find project root
         while current_dir.parent != current_dir:  # Stop at root directory
             if any((current_dir / marker).exists() for marker in project_markers):
                 return current_dir / "pulumi_plugins"
             current_dir = current_dir.parent
-            
+
         raise FileNotFoundError(
             "Could not find project root directory containing pulumi_plugins. "
             "Please ensure you're running from within the project directory."
@@ -232,9 +227,7 @@ class InfrastructureManager(ABC):
         plugin_path = self.get_plugins_root_dir() / plugin_filename
 
         if not plugin_path.exists():
-            raise FileNotFoundError(
-                f"Plugin file not found: {plugin_path}\n"
-            )
+            raise FileNotFoundError(f"Plugin file not found: {plugin_path}\n")
 
         # Create destination directory following Pulumi's structure
         plugin_dir = self.plugins_dir / f"resource-{provider}-v{version}"
@@ -248,8 +241,9 @@ class InfrastructureManager(ABC):
         with tarfile.open(plugin_path, "r:gz") as tar:
             tar.extractall(path=plugin_dir)
 
-        logger.info(f"Successfully installed {provider} plugin v{version} from {plugin_path}")
-
+        logger.info(
+            f"Successfully installed {provider} plugin v{version} from {plugin_path}"
+        )
 
     def up(self, location: str, server_type: str):
         """

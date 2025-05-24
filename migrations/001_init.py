@@ -6,39 +6,44 @@ import peewee as pw
 from peewee_migrate import Migrator
 
 with suppress(ImportError):
-    import playhouse.postgres_ext as pw_pext
+    pass
 
 
-def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
+def migrate(migrator: Migrator, database: pw.Database, *, fake=False):  # noqa: ARG001
     """Write your migrations here."""
 
     # Determine the appropriate datetime type based on the database
     if isinstance(database, pw.PostgresqlDatabase):
-        datetime_type = 'TIMESTAMP'
+        datetime_type = "TIMESTAMP"
     else:
-        datetime_type = 'DATETIME'
+        datetime_type = "DATETIME"
 
     # Setting table
-    migrator.sql("""
+    migrator.sql(
+        """
         CREATE TABLE "setting" (
             "id" SERIAL PRIMARY KEY,
             "key" VARCHAR(255) NOT NULL,
             "value" TEXT NOT NULL,
             "type" VARCHAR(255) NOT NULL
         )
-    """ if isinstance(database, pw.PostgresqlDatabase) else """
+    """
+        if isinstance(database, pw.PostgresqlDatabase)
+        else """
         CREATE TABLE "setting" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "key" VARCHAR(255) NOT NULL,
             "value" TEXT NOT NULL,
             "type" VARCHAR(255) NOT NULL
         )
-    """)
+    """
+    )
 
     migrator.sql('CREATE UNIQUE INDEX "setting_key" ON "setting" ("key")')
 
     # Server table
-    migrator.sql(f"""
+    migrator.sql(
+        f"""
         CREATE TABLE "server" (
             "id" SERIAL PRIMARY KEY,
             "provider" VARCHAR(255) NOT NULL,
@@ -51,7 +56,9 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
             "server_type" VARCHAR(255) NOT NULL,
             "created_at" {datetime_type} NOT NULL
         )
-    """ if isinstance(database, pw.PostgresqlDatabase) else f"""
+    """
+        if isinstance(database, pw.PostgresqlDatabase)
+        else f"""
         CREATE TABLE "server" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "provider" VARCHAR(255) NOT NULL,
@@ -64,12 +71,14 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
             "server_type" VARCHAR(255) NOT NULL,
             "created_at" {datetime_type} NOT NULL
         )
-    """)
+    """
+    )
 
     migrator.sql('CREATE UNIQUE INDEX "server_ip_address" ON "server" ("ip_address")')
 
     # VPNPeer table
-    migrator.sql(f"""
+    migrator.sql(
+        f"""
         CREATE TABLE "vpnpeer" (
             "id" SERIAL PRIMARY KEY,
             "server_id" INTEGER NOT NULL,
@@ -79,7 +88,9 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
             "created_at" {datetime_type} NOT NULL,
             FOREIGN KEY ("server_id") REFERENCES "server" ("id") ON DELETE CASCADE
         )
-    """ if isinstance(database, pw.PostgresqlDatabase) else f"""
+    """
+        if isinstance(database, pw.PostgresqlDatabase)
+        else f"""
         CREATE TABLE "vpnpeer" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "server_id" INTEGER NOT NULL,
@@ -89,15 +100,17 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
             "created_at" {datetime_type} NOT NULL,
             FOREIGN KEY ("server_id") REFERENCES "server" ("id") ON DELETE CASCADE
         )
-    """)
+    """
+    )
 
     migrator.sql('CREATE INDEX "vpnpeer_server_id" ON "vpnpeer" ("server_id")')
-    migrator.sql('CREATE UNIQUE INDEX "vpnpeer_server_id_peer_name" ON "vpnpeer" ("server_id", "peer_name")')
+    migrator.sql(
+        'CREATE UNIQUE INDEX "vpnpeer_server_id_peer_name" ON "vpnpeer" ("server_id", "peer_name")'
+    )
 
 
-def rollback(migrator: Migrator, database: pw.Database, *, fake=False):
+def rollback(migrator: Migrator, database: pw.Database, *, fake=False):  # noqa: ARG001
     """Write your rollback migrations here."""
     migrator.sql('DROP TABLE IF EXISTS "vpnpeer"')
     migrator.sql('DROP TABLE IF EXISTS "server"')
     migrator.sql('DROP TABLE IF EXISTS "setting"')
-
