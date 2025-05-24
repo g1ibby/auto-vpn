@@ -1,5 +1,5 @@
 # Stage 1: Build dependencies
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,10 +20,10 @@ COPY pyproject.toml ./
 COPY README.md ./
 
 # Stage 2: Install Pulumi
-FROM builder as pulumi-installer
+FROM builder AS pulumi-installer
 
 # Install Pulumi
-ENV PULUMI_VERSION=3.142.0
+ENV PULUMI_VERSION=3.171.0
 RUN curl -fsSL https://get.pulumi.com | sh -s -- --version $PULUMI_VERSION
 
 # Stage 3: Final stage
