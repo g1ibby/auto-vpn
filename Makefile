@@ -21,14 +21,13 @@ test: install-dev
 	. $(VENV)/bin/activate && pytest
 
 lint: install-dev
-	. $(VENV)/bin/activate && black src tests
-	. $(VENV)/bin/activate && isort src tests
-	. $(VENV)/bin/activate && flake8 src tests
+	. $(VENV)/bin/activate && ruff check src tests
+	. $(VENV)/bin/activate && ruff format --check src tests
 	. $(VENV)/bin/activate && mypy src tests
 
 format: install-dev
-	. $(VENV)/bin/activate && black src tests
-	. $(VENV)/bin/activate && isort src tests
+	. $(VENV)/bin/activate && ruff format src tests
+	. $(VENV)/bin/activate && ruff check --fix src tests
 
 clean:
 	rm -rf $(VENV)

@@ -1,46 +1,46 @@
-from typing import Optional
-from pydantic_settings import BaseSettings
-from pydantic import Field, validator
-from urllib.parse import urlparse
 import logging
+from urllib.parse import urlparse
+
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     LOG_LEVEL: str = Field(
         default="INFO",
-        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
     USERNAME: str = Field(..., description="Username for authentication")
     PASSWORD: str = Field(..., description="Password for authentication")
     DATABASE_URL: str = Field(
         default="sqlite:///data_layer/data_layer.db",
-        description="Database connection string"
+        description="Database connection string",
     )
-    SELF_URL: Optional[str] = Field(
-        default=None,
-        description="Optional self URL for the application"
+    SELF_URL: str | None = Field(
+        default=None, description="Optional self URL for the application"
     )
-    VULTR_API_KEY: Optional[str] = Field(
-        default=None, 
-        description="API key for Vultr services"
+    VULTR_API_KEY: str | None = Field(
+        default=None, description="API key for Vultr services"
     )
-    LINODE_API_KEY: Optional[str] = Field(
-        default=None,
-        description="API key for Linode services"
+    LINODE_API_KEY: str | None = Field(
+        default=None, description="API key for Linode services"
     )
 
-    @validator('LOG_LEVEL')
+    @validator("LOG_LEVEL")
     def validate_log_level(cls, v):
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         v = v.upper()
         if v not in valid_levels:
-            raise ValueError(f"Invalid log level. Must be one of: {', '.join(valid_levels)}")
+            raise ValueError(
+                f"Invalid log level. Must be one of: {', '.join(valid_levels)}"
+            )
         return v
 
     def get_log_level(self) -> int:
         """Convert string log level to logging constant"""
         return getattr(logging, self.LOG_LEVEL)
 
-    @validator('DATABASE_URL')
+    @validator("DATABASE_URL")
     def validate_database_url(cls, v):
         try:
             result = urlparse(v)
@@ -48,9 +48,9 @@ class Settings(BaseSettings):
                 raise ValueError("Missing database scheme")
             return v
         except Exception as e:
-            raise ValueError(f"Invalid database URL format: {str(e)}")
+            raise ValueError(f"Invalid database URL format: {e!s}")
 
-    @validator('SELF_URL')
+    @validator("SELF_URL")
     def validate_self_url(cls, v):
         if v is not None:
             try:
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
                     raise ValueError("Invalid URL format")
                 return v
             except Exception as e:
-                raise ValueError(f"Invalid SELF_URL format: {str(e)}")
+                raise ValueError(f"Invalid SELF_URL format: {e!s}")
         return v
 
     def validate_api_keys(self):

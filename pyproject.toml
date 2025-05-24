@@ -36,6 +36,8 @@ dev = [
     "flake8>=7.0.0",
     "mypy>=1.8.0",
     "pytest-cov>=4.1.0",
+    "ruff>=0.11.11",
+    "pre-commit>=4.2.0",
 ]
 
 [build-system]
@@ -64,3 +66,38 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "--cov=src/auto_vpn --cov-report=term-missing"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ICN", # flake8-import-conventions
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long, handled by formatter
+    "B008",  # do not perform function calls in argument defaults
+    "B904",  # allow raising without from inside except
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["ARG", "S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

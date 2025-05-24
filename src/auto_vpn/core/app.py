@@ -1,28 +1,31 @@
-import pytz
 import json
-import requests
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, Tuple
-from auto_vpn.db.models import Server, VPNPeer
+from typing import Any, ClassVar
+
+import pytz
+import requests
+
 from auto_vpn.db.db import db_instance
+from auto_vpn.db.models import Server, VPNPeer
 from auto_vpn.db.repository import Repository
 from auto_vpn.providers.infra_manager import InfrastructureManager
-from auto_vpn.providers.vultr_manager import VultrManager
 from auto_vpn.providers.linode_manager import LinodeManager
-from auto_vpn.providers.provider_factory import CloudProviderFactory
 from auto_vpn.providers.provider_base import CloudProvider
-from auto_vpn.providers.provider_types import Region, InstanceType
-from .wg_manager import WireGuardManager
+from auto_vpn.providers.provider_factory import CloudProviderFactory
+from auto_vpn.providers.provider_types import InstanceType, Region
+from auto_vpn.providers.vultr_manager import VultrManager
+
 from .utils import (
-    generate_projectname,
+    deserialize_private_key,
     generate_peername,
-    setup_logger,
+    generate_projectname,
     generate_public_key,
     generate_ssh_keypair,
-    serialize_private_key,
-    deserialize_private_key,
     get_public_key_text,
+    serialize_private_key,
+    setup_logger,
 )
+from .wg_manager import WireGuardManager
 
 logger = setup_logger(name="core.app")
 
@@ -33,16 +36,16 @@ class App:
     and VPN Managers to manage cloud providers, servers, and VPN peers.
     """
 
-    SUPPORTED_PROVIDERS = {"vultr", "linode"}
+    SUPPORTED_PROVIDERS: ClassVar[set[str]] = {"vultr", "linode"}
     INACTIVITY_THRESHOLD_KEY = "inactivity_threshold"
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
     def __init__(
         self,
         db_url: str,
-        inactivity_threshold: Optional[timedelta] = None,
-        vultr_api_key: Optional[str] = None,
-        linode_api_key: Optional[str] = None,
+        inactivity_threshold: timedelta | None = None,
+        vultr_api_key: str | None = None,
+        linode_api_key: str | None = None,
     ):
         db_instance.init_db(db_url=db_url)
 
@@ -159,7 +162,7 @@ class App:
         )
         return server
 
-    def get_all_servers(self) -> List[Server]:
+    def get_all_servers(self) -> list[Server]:
         """
         Retrieve all servers or servers for a specific provider.
         :return: List of Server objects.
@@ -176,7 +179,7 @@ class App:
         if not server:
             raise ValueError(f"Server with ID {server_id} does not exist.")
 
-        stack_state_loaded: Optional[Dict[str, Any]] = json.loads(server.stack_state)
+        stack_state_loaded: dict[str, Any] | None = json.loads(server.stack_state)
 
         private_key = deserialize_private_key(server.ssh_private_key)
         public_key_text = get_public_key_text(private_key)
@@ -480,8 +483,8 @@ class App:
         provider: str,
         project_name: str,
         ssh_public_key: str,
-        stack_state: Optional[Dict[str, Any]] = None,
-    ) -> Optional[InfrastructureManager]:
+        stack_state: dict[str, Any] | None = None,
+    ) -> InfrastructureManager | None:
         """
         Initialize the InfrastructureManager for a given provider.
         :param provider: Provider type ('vultr' or 'linode')
@@ -505,7 +508,7 @@ class App:
             )
         return None
 
-    def _get_all_providers(self) -> List[CloudProvider]:
+    def _get_all_providers(self) -> list[CloudProvider]:
         """
         Initialize and return providers that have valid credentials configured
         :return: List of CloudProvider instances
@@ -523,7 +526,7 @@ class App:
                     logger.warn(f"Could not initialize {provider_name}: {e}")
         return providers
 
-    def get_available_regions(self) -> List[Region]:
+    def get_available_regions(self) -> list[Region]:
         """
         Retrieve available regions from all configured providers.
         :return: A list of Region objects from all providers
@@ -570,7 +573,7 @@ class App:
 
     def search_regions(
         self, search_term: str
-    ) -> List[Tuple[Region, Optional[InstanceType]]]:
+    ) -> list[tuple[Region, InstanceType | None]]:
         """
         Search for regions by city or country name/code across all providers,
         including the smallest instance type available in each region.
@@ -601,7 +604,7 @@ class App:
 
     # ----------------- Additional Methods ----------------- #
 
-    def list_servers_with_peers(self) -> List[Dict]:
+    def list_servers_with_peers(self) -> list[dict]:
         """
         List servers along with their associated VPN peers.
         :return: List of dictionaries containing server and its peers.

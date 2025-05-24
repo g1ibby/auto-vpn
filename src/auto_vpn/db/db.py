@@ -1,12 +1,14 @@
 import os
+from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import urlparse
+
 from peewee import (
-    SqliteDatabase,
     PostgresqlDatabase,
     Proxy,
+    SqliteDatabase,
 )
-from urllib.parse import urlparse
-from contextlib import contextmanager
+
 from auto_vpn.core.utils import setup_logger
 
 logger = setup_logger(name="db.db")
@@ -23,7 +25,7 @@ class Database:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(Database, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.initialized = False
             cls._instance.proxy = Proxy()
         return cls._instance
@@ -61,7 +63,7 @@ class Database:
                     database = SqliteDatabase(path, pragmas=pragmas)
                     logger.info(f"Successfully initialized SQLite database at: {path}")
                 except Exception as e:
-                    error_msg = f"Failed to initialize SQLite database: {str(e)}"
+                    error_msg = f"Failed to initialize SQLite database: {e!s}"
                     logger.error(error_msg)
                     raise DatabaseInitializationError(error_msg) from e
 
@@ -78,7 +80,7 @@ class Database:
                         f"Successfully initialized PostgreSQL database at: {parsed_url.hostname}"
                     )
                 except Exception as e:
-                    error_msg = f"Failed to initialize PostgreSQL database: {str(e)}"
+                    error_msg = f"Failed to initialize PostgreSQL database: {e!s}"
                     logger.error(error_msg)
                     raise DatabaseInitializationError(error_msg) from e
             else:
@@ -98,16 +100,16 @@ class Database:
                 router.run()
                 logger.info("Database migrations completed successfully")
             except Exception as e:
-                error_msg = f"Error running migrations: {str(e)}"
+                error_msg = f"Error running migrations: {e!s}"
                 logger.error(error_msg)
                 raise DatabaseInitializationError(error_msg) from e
 
-        except (DatabaseInitializationError, ValueError) as e:
+        except (DatabaseInitializationError, ValueError):
             # Re-raise these exceptions as they're already properly formatted
             raise
         except Exception as e:
             # Catch any other unexpected errors
-            error_msg = f"Unexpected error during database initialization: {str(e)}"
+            error_msg = f"Unexpected error during database initialization: {e!s}"
             logger.error(error_msg)
             raise DatabaseInitializationError(error_msg) from e
 
@@ -126,7 +128,7 @@ class Database:
                 Path(directory).mkdir(parents=True, exist_ok=True)
                 logger.info(f"Ensured SQLite directory exists: {directory}")
         except Exception as e:
-            error_msg = f"Failed to create SQLite directory: {str(e)}"
+            error_msg = f"Failed to create SQLite directory: {e!s}"
             logger.error(error_msg)
             raise DatabaseInitializationError(error_msg) from e
 

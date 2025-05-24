@@ -1,30 +1,32 @@
-from functools import lru_cache
-import requests
-import pycountry
-import os
 from decimal import Decimal
-from typing import List, Optional, Dict
+
+import pycountry
+import requests
+
 from auto_vpn.providers.provider_base import CloudProvider
-from auto_vpn.providers.provider_types import Region, InstanceType
+from auto_vpn.providers.provider_types import InstanceType, Region
+
 
 class VultrProvider(CloudProvider):
     BASE_URL = "https://api.vultr.com/v2"
-    
-    def __init__(self, api_key: Optional[str] = None):
+
+    def __init__(self, api_key: str | None = None):
         super().__init__(api_key)
         if not api_key:
             raise ValueError("Vultr provider requires an API key")
-        self._regions_map: Dict[str, Region] = {}
-    
+        self._regions_map: dict[str, Region] = {}
+        self._cached_regions: list[Region] | None = None
+        self._cached_instance_types: list[InstanceType] | None = None
+
     def requires_api_key(self) -> bool:
         return True
-    
+
     def get_headers(self):
         return {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-    
+
     def _get_country_name(self, country_code: str) -> str:
         """Convert country code to full name"""
         try:
@@ -32,16 +34,17 @@ class VultrProvider(CloudProvider):
             return country.name if country else "Unknown"
         except (KeyError, AttributeError):
             return "Unknown"
-    
-    @lru_cache(maxsize=1)
-    def get_regions(self) -> List[Region]:
+
+    def get_regions(self) -> list[Region]:
+        if self._cached_regions is not None:
+            return self._cached_regions
         """
         Fetch all available regions from Vultr API
         """
         url = f"{self.BASE_URL}/regions"
         response = requests.get(url, headers=self.get_headers())
         response.raise_for_status()
-        
+
         regions = []
         for r in response.json()["regions"]:
             region = Region(
@@ -53,45 +56,52 @@ class VultrProvider(CloudProvider):
             )
             regions.append(region)
             self._regions_map[r["id"]] = region
-            
+
+        self._cached_regions = regions
         return regions
-    
-    @lru_cache(maxsize=1)
-    def get_instance_types(self, region_id: Optional[str] = None) -> List[InstanceType]:
+
+    def get_instance_types(self, region_id: str | None = None) -> list[InstanceType]:
+        if self._cached_instance_types is not None:
+            return self._cached_instance_types
         """
         Fetch all instance types, optionally filtered by region
         """
         url = f"{self.BASE_URL}/plans"
         response = requests.get(url, headers=self.get_headers())
         response.raise_for_status()
-        
+
         # Ensure regions are loaded
         if not self._regions_map:
             self.get_regions()
-        
+
         plans = []
         for p in response.json()["plans"]:
             # Skip if region_id is specified and plan is not available in that region
             if region_id and region_id not in p.get("locations", []):
                 continue
-                
+
             plan = InstanceType(
                 id=p["id"],
                 vcpus=p["vcpu_count"],
                 memory=p["ram"],
                 disk=p["disk"],
-                transfer=p.get("bandwidth", p.get("monthly_transfer")),  # Handle different field names
+                transfer=p.get(
+                    "bandwidth", p.get("monthly_transfer")
+                ),  # Handle different field names
                 price_monthly=Decimal(str(p["monthly_cost"])),
-                provider="vultr"
+                provider="vultr",
             )
-            
+
             # If no specific region is requested, or if the plan is available in the requested region
             if not region_id or region_id in p.get("locations", []):
                 plans.append(plan)
-        
+
+        self._cached_instance_types = plans
         return plans
-    
-    def get_smallest_instance(self, region_id: Optional[str] = None) -> Optional[InstanceType]:
+
+    def get_smallest_instance(
+        self, region_id: str | None = None
+    ) -> InstanceType | None:
         """
         Get the smallest (cheapest) instance type available in the specified region
         """
@@ -100,46 +110,47 @@ class VultrProvider(CloudProvider):
             return None
 
         # Filter out instances with 'free' in their ID
-        paid_instances = [inst for inst in instances if 'free' not in inst.id.lower()]
-        
+        paid_instances = [inst for inst in instances if "free" not in inst.id.lower()]
+
         if not paid_instances:
             return None
-            
+
         # First try to find the cheapest instance by monthly cost
         return min(paid_instances, key=lambda x: (x.price_monthly, x.vcpus, x.memory))
 
-    def search_smallest(self, search_term: str) -> List[tuple[Region, InstanceType]]:
+    def search_smallest(self, search_term: str) -> list[tuple[Region, InstanceType]]:
         """
         Search for smallest instance types by country or city name
-        
+
         Args:
             search_term: Country or city name to search for
-            
+
         Returns:
             List of tuples containing matching (Region, InstanceType) pairs,
             sorted by price (cheapest first)
         """
         search_term = search_term.lower()
         results = []
-        
+
         # Get all regions first
         regions = self.get_regions()
-        
+
         # Filter regions based on search term
         matching_regions = [
-            region for region in regions
-            if search_term in region.city.lower() or 
-               search_term in region.country.lower() or 
-               search_term in region.country_code.lower()
+            region
+            for region in regions
+            if search_term in region.city.lower()
+            or search_term in region.country.lower()
+            or search_term in region.country_code.lower()
         ]
-        
+
         # For each matching region, get the smallest instance
         for region in matching_regions:
             smallest = self.get_smallest_instance(region.id)
             if smallest:
                 results.append((region, smallest))
-        
+
         # Sort results by price
         results.sort(key=lambda x: (x[1].price_monthly, x[1].vcpus, x[1].memory))
-        
+
         return results
