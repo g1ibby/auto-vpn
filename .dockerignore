@@ -24,4 +24,5 @@ coverage.xml
 tests/
 docs/
 *.md
+!README.md
 .streamlit/secrets.toml
