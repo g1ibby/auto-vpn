@@ -122,7 +122,7 @@ requires-dist = [
     { name = "pytz", specifier = ">=2024.2" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.11" },
-    { name = "streamlit", specifier = ">=1.40.1" },
+    { name = "streamlit", specifier = ">=1.45.1" },
     { name = "streamlit-authenticator", specifier = ">=0.4.1" },
 ]
 provides-extras = ["dev"]
