@@ -1,7 +1,7 @@
 
 [project]
 name = "auto-vpn"
-version = "0.0.11"
+version = "0.1.0"
 description = "Auto-VPN: On-Demand WireGuard VPN Server Manager"
 authors = [
     {name = "Sergei Varibrus"}
