@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: auto-vpn
+    runtime: docker
+    image:
+      url: ghcr.io/g1ibby/auto-vpn:latest
+    plan: free
+    region: oregon
+    env: docker
+    envVars:
+      - key: USERNAME
+        value: admin
+      - key: PASSWORD
+        generateValue: true
+      - key: VULTR_API_KEY
+        sync: false
+      - key: LINODE_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SELF_URL
+        fromService:
+          type: web
+          name: auto-vpn
+          property: host
+    autoDeploy: false
+    healthCheckPath: /
