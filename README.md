@@ -1,5 +1,11 @@
-# Auto-VPN: On-Demand WireGuard VPN Server Manager 
+# Auto-VPN: On-Demand WireGuard VPN Server Manager
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+<div align="center">
+  <a href="https://render.com/deploy?repo=https://github.com/g1ibby/auto-vpn" target="_blank" rel="nofollow">
+    <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
+  </a>
+</div>
 
 Deploy your personal WireGuard VPN server with just a few clicks. No subscriptions, no complexity, full control.
 
@@ -42,7 +48,7 @@ docker run --rm -d --pull always --name auto-vpn \
    - Use image: `ghcr.io/g1ibby/auto-vpn`
 
 2. **Configure Environment Variables**
-   
+
    Required:
    - `USERNAME`: Admin username
    - `PASSWORD`: Admin password
