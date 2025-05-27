@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12.1"
 dependencies = [
     "cryptography>=44.0.0",
-    "ediri-vultr==2.22.1",
+    "ediri-vultr==2.23.1",
     "paramiko>=3.5.0",
     "peewee>=3.17.8",
     "petname>=2.6",
