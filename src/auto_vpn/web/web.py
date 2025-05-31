@@ -101,7 +101,7 @@ class VPNApplication:
                     )
                     return response.status_code
                 except Exception as e:
-                    logger.warn(f"Self-ping failed: {e!s}")
+                    logger.warning(f"Self-ping failed: {e!s}")
                     return None
 
             periodic_task_ping = PeriodicTask(

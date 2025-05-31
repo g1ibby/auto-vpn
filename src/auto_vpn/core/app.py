@@ -209,7 +209,7 @@ class App:
             try:
                 self.delete_server(server.id)
             except Exception as e:
-                logger.warn(f"Error deleting server {server}: {e}")
+                logger.warning(f"Error deleting server {server}: {e}")
 
     # ----------------- VPN Peer Methods ----------------- #
 
@@ -465,7 +465,7 @@ class App:
             try:
                 self.delete_vpn_peer(peer.id)
             except Exception as e:
-                logger.warn(f"Error deleting VPN peer {peer.peer_name}: {e}")
+                logger.warning(f"Error deleting VPN peer {peer.peer_name}: {e}")
 
     def get_peer_config(self, peer_name: str) -> str:
         """
@@ -534,7 +534,7 @@ class App:
                     if provider:
                         providers.append(provider)
                 except ValueError as e:
-                    logger.warn(f"Could not initialize {provider_name}: {e}")
+                    logger.warning(f"Could not initialize {provider_name}: {e}")
         return providers
 
     def get_available_regions(self) -> list[Region]:
@@ -601,7 +601,7 @@ class App:
                 provider_results = provider.search_smallest(search_term)
                 results.extend(provider_results)
             except requests.HTTPError as e:
-                logger.warn(f"Failed to search {provider.__class__.__name__}: {e}")
+                logger.warning(f"Failed to search {provider.__class__.__name__}: {e}")
 
         # Sort results by instance price (if available), then location
         return sorted(

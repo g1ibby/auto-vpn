@@ -85,7 +85,7 @@ class LinodeManager(InfrastructureManager):
             try:
                 self.stack.set_config(key, value)
             except Exception as e:
-                logger.warn(f"Error setting config '{key}': {e}")
+                logger.warning(f"Error setting config '{key}': {e}")
                 raise
 
     def required_plugins(self):
