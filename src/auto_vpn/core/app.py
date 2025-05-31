@@ -8,6 +8,7 @@ import requests
 from auto_vpn.db.db import db_instance
 from auto_vpn.db.models import Server, VPNPeer
 from auto_vpn.db.repository import Repository
+from auto_vpn.providers.digitalocean_manager import DigitalOceanManager
 from auto_vpn.providers.infra_manager import InfrastructureManager
 from auto_vpn.providers.linode_manager import LinodeManager
 from auto_vpn.providers.provider_base import CloudProvider
@@ -36,7 +37,7 @@ class App:
     and VPN Managers to manage cloud providers, servers, and VPN peers.
     """
 
-    SUPPORTED_PROVIDERS: ClassVar[set[str]] = {"vultr", "linode"}
+    SUPPORTED_PROVIDERS: ClassVar[set[str]] = {"vultr", "linode", "digitalocean"}
     INACTIVITY_THRESHOLD_KEY = "inactivity_threshold"
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
@@ -46,6 +47,7 @@ class App:
         inactivity_threshold: timedelta | None = None,
         vultr_api_key: str | None = None,
         linode_api_key: str | None = None,
+        digitalocean_api_key: str | None = None,
     ):
         db_instance.init_db(db_url=db_url)
 
@@ -53,7 +55,11 @@ class App:
         self.minimum_server_age = timedelta(minutes=15)
 
         # Store API keys
-        self.provider_credentials = {"vultr": vultr_api_key, "linode": linode_api_key}
+        self.provider_credentials = {
+            "vultr": vultr_api_key,
+            "linode": linode_api_key,
+            "digitalocean": digitalocean_api_key,
+        }
 
         # Initialize inactivity threshold setting if it doesn't exist
         try:
@@ -500,6 +506,13 @@ class App:
         elif provider == "linode":
             return LinodeManager(
                 linode_api_key=self.provider_credentials["linode"],
+                ssh_public_key=ssh_public_key,
+                project_name=project_name,
+                stack_state=stack_state,
+            )
+        elif provider == "digitalocean":
+            return DigitalOceanManager(
+                digitalocean_api_key=self.provider_credentials["digitalocean"],
                 ssh_public_key=ssh_public_key,
                 project_name=project_name,
                 stack_state=stack_state,

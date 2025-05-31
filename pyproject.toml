@@ -24,6 +24,7 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pydantic-settings>=2.6.1",
     "pulumi-linode>=4.39.0",
+    "pulumi-digitalocean>=4.45.0",
     "peewee-migrate>=1.13.0",
     "countryflag>=0.1.2b3",
 ]
