@@ -11,16 +11,16 @@ Deploy your personal WireGuard VPN server with just a few clicks. No subscriptio
 
 ![Main interface](images/main.png)
 
-This project provides an effortless way to spin up your own temporary, cost-effective WireGuard VPN servers on-demand—no long-term subscriptions or complex manual setups required. By leveraging popular VPS providers like Vultr or Linode, it automatically:
+This project provides an effortless way to spin up your own temporary, cost-effective WireGuard VPN servers on-demand—no long-term subscriptions or complex manual setups required. By leveraging popular VPS providers like Vultr, Linode, or DigitalOcean, it automatically:
 
 ## 🚀 Features
 
-- **On-Demand Deployment**: Launch VPN servers instantly on Vultr or Linode
+- **On-Demand Deployment**: Launch VPN servers instantly on Vultr, Linode, or DigitalOcean
 - **Cost-Effective**: Pay only for actual usage with automatic server cleanup
 - **User-Friendly Interface**: Simple GUI for server and profile management
 - **Enhanced Privacy**: Full control over your VPN infrastructure
 - **Automated Setup**: Pre-configured WireGuard installation
-- **Multi-Provider Support**: Works with major VPS providers (Vultr, Linode)
+- **Multi-Provider Support**: Works with major VPS providers (Vultr, Linode, DigitalOcean)
 
 ## 🏃‍♂️ Quick Start
 
@@ -52,7 +52,7 @@ docker run --rm -d --pull always --name auto-vpn \
    Required:
    - `USERNAME`: Admin username
    - `PASSWORD`: Admin password
-   - `VULTR_API_KEY` or `LINODE_API_KEY`: VPS provider API key
+   - `VULTR_API_KEY`, `LINODE_API_KEY`, or `DIGITALOCEAN_API_KEY`: VPS provider API key
    - `SELF_URL`: Your Render service URL (e.g., https://your-service.onrender.com)
 
   Database Configuration:
@@ -90,10 +90,11 @@ The application supports two database types:
 | PASSWORD | Yes | Admin login password |
 | VULTR_API_KEY | * | Vultr API key |
 | LINODE_API_KEY | * | Linode API key |
+| DIGITALOCEAN_API_KEY | * | DigitalOcean API key |
 | SELF_URL | No | Service URL for auto-ping |
 | DATABASE_URL | No | Database connection string |
 
-\* Either VULTR_API_KEY or LINODE_API_KEY is required
+\* One of VULTR_API_KEY, LINODE_API_KEY, or DIGITALOCEAN_API_KEY is required
 
 ## 🏗️ Architecture
 
@@ -120,7 +121,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 🗺️ Roadmap
 
 ### New Cloud Providers
-- [ ] DigitalOcean
+- [x] DigitalOcean
 - [ ] Hetzner
 - [ ] AWS
 

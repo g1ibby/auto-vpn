@@ -53,10 +53,10 @@ class WireGuardManager:
                     logger.debug(f"Retrying in {retry_delay} second(s)...")
                     time.sleep(retry_delay)
                 else:
-                    logger.warn("Maximum connection attempts reached. Exiting.")
+                    logger.warning("Maximum connection attempts reached. Exiting.")
                     sys.exit(1)
             except Exception as e:
-                logger.warn(f"An unexpected error occurred: {e}")
+                logger.warning(f"An unexpected error occurred: {e}")
                 sys.exit(1)
 
         # Open SFTP client
@@ -64,7 +64,7 @@ class WireGuardManager:
             self.sftp = self.client.open_sftp()
             logger.info("SFTP session established.")
         except SSHException as e:
-            logger.warn(f"Failed to establish SFTP session: {e}")
+            logger.warning(f"Failed to establish SFTP session: {e}")
             self.client.close()
             sys.exit(1)
 
@@ -131,7 +131,7 @@ class WireGuardManager:
                 time.sleep(0.5)
 
         except Exception as e:
-            logger.warn(f"Error during command execution: {e}")
+            logger.warning(f"Error during command execution: {e}")
 
     def list_clients(self):
         """
@@ -149,7 +149,7 @@ class WireGuardManager:
             return clients
 
         except OSError:
-            logger.warn("WireGuard configuration file not found.")
+            logger.warning("WireGuard configuration file not found.")
             return []
 
     def add_client(self, client_name) -> tuple[str, str]:
@@ -193,7 +193,7 @@ class WireGuardManager:
                     timeout=900,  # 15 minutes
                 )
             except Exception as e:
-                logger.warn(f"Error during installation: {e}")
+                logger.warning(f"Error during installation: {e}")
                 raise e
 
             # Retrieve and display client.conf
@@ -240,11 +240,11 @@ class WireGuardManager:
         # First, list existing clients
         clients = self.list_clients()
         if not clients:
-            logger.warn("No clients available to remove.")
+            logger.warning("No clients available to remove.")
             return
 
         if client_name not in clients:
-            logger.warn(f"Client '{client_name}' does not exist.")
+            logger.warning(f"Client '{client_name}' does not exist.")
             return
 
         # Determine the client's number
@@ -285,7 +285,7 @@ class WireGuardManager:
                 client_conf = f.read().decode("utf-8")
                 return client_conf
         except OSError:
-            logger.warn(f"Error: {client_conf_path} not found.")
+            logger.warning(f"Error: {client_conf_path} not found.")
 
     def get_latest_handshakes(self) -> dict[str, datetime | None]:
         """
@@ -300,7 +300,7 @@ class WireGuardManager:
             output = stdout.read().decode("utf-8")
             error = stderr.read().decode("utf-8")
             if error:
-                logger.warn(f"Error executing command: {error}")
+                logger.warning(f"Error executing command: {error}")
                 return {}
 
             handshakes = {}
@@ -325,7 +325,7 @@ class WireGuardManager:
             return handshakes
 
         except Exception as e:
-            logger.warn(f"Failed to retrieve latest handshakes: {e}")
+            logger.warning(f"Failed to retrieve latest handshakes: {e}")
             return {}
 
     def close(self):

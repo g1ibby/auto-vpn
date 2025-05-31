@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from auto_vpn.providers.digitalocean_provider import DigitalOceanProvider
 from auto_vpn.providers.linode_provider import LinodeProvider
 from auto_vpn.providers.provider_base import CloudProvider
 from auto_vpn.providers.vultr_provider import VultrProvider
@@ -15,7 +16,7 @@ class CloudProviderFactory:
         """
         Get a provider instance. Returns cached instance if available.
         Args:
-            provider_name: Name of the provider ('vultr' or 'linode')
+            provider_name: Name of the provider ('vultr', 'linode', or 'digitalocean')
             api_key: API key for the provider (required for some providers)
         Returns:
             CloudProvider instance or None if provider not found
@@ -27,7 +28,11 @@ class CloudProviderFactory:
             return cls._instances[provider_name]
 
         # Provider class mapping
-        providers = {"vultr": VultrProvider, "linode": LinodeProvider}
+        providers = {
+            "vultr": VultrProvider,
+            "linode": LinodeProvider,
+            "digitalocean": DigitalOceanProvider,
+        }
         provider_class = providers.get(provider_name)
         if not provider_class:
             return None

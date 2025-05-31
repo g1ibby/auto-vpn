@@ -16,6 +16,8 @@ services:
         sync: false
       - key: LINODE_API_KEY
         sync: false
+      - key: DIGITALOCEAN_API_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: SELF_URL

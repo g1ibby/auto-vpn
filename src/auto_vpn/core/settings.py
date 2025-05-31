@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     LINODE_API_KEY: str | None = Field(
         default=None, description="API key for Linode services"
     )
+    DIGITALOCEAN_API_KEY: str | None = Field(
+        default=None, description="API key for DigitalOcean services"
+    )
 
     @validator("LOG_LEVEL")
     def validate_log_level(cls, v):
@@ -64,7 +67,9 @@ class Settings(BaseSettings):
 
     def validate_api_keys(self):
         """Validate that at least one provider API key is configured"""
-        if not any([self.VULTR_API_KEY, self.LINODE_API_KEY]):
+        if not any(
+            [self.VULTR_API_KEY, self.LINODE_API_KEY, self.DIGITALOCEAN_API_KEY]
+        ):
             raise ValueError("At least one provider API key must be configured")
 
     class Config:

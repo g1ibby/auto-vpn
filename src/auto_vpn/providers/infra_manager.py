@@ -72,7 +72,7 @@ class InfrastructureManager(ABC):
                 stack_name=self.stack_name, workspace=self.workspace
             )
         except Exception as e:
-            logger.warn(f"Stack creation/selection error: {e}")
+            logger.warning(f"Stack creation/selection error: {e}")
             raise
 
     def export_stack_state(self) -> dict[str, Any]:
@@ -215,7 +215,7 @@ class InfrastructureManager(ABC):
             try:
                 self.install_local_plugin(provider, version)
             except Exception as e:
-                logger.warn(f"Error installing plugin {provider} v{version}: {e}")
+                logger.warning(f"Error installing plugin {provider} v{version}: {e}")
                 raise
 
         logger.info("All required plugins are installed.")
