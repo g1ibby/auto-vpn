@@ -65,7 +65,7 @@ class DigitalOceanProvider(CloudProvider):
             return self._cached_regions
 
         url = f"{self.BASE_URL}/regions"
-        response = requests.get(url, headers=self.get_headers())
+        response = requests.get(url, headers=self.get_headers(), timeout=10)
         response.raise_for_status()
 
         regions = []
