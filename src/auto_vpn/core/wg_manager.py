@@ -94,7 +94,7 @@ class WireGuardManager:
             logger.debug(f"Executing command: {command}")
 
             buffer = ""
-            response_index = 0
+            used_responses = set()
             start_time = time.time()
 
             while True:
@@ -102,19 +102,23 @@ class WireGuardManager:
                     recv = shell.recv(1024).decode("utf-8", errors="ignore")
                     buffer += recv
 
+                    # Show real-time output for debugging
+                    if recv.strip():
+                        logger.debug(f"REAL-TIME OUTPUT: {recv}")
+
                     # Check for each prompt and send response
-                    if response_index < len(responses):
-                        prompt_pattern, response = responses[response_index]
-                        if re.search(
+                    for i, (prompt_pattern, response) in enumerate(responses):
+                        if i not in used_responses and re.search(
                             prompt_pattern, buffer, re.IGNORECASE | re.MULTILINE
                         ):
                             logger.debug(
                                 f"\nDetected prompt: '{prompt_pattern.strip()}', sending response: '{response.strip()}'"
                             )
                             shell.send(response)
-                            response_index += 1
+                            used_responses.add(i)
                             # Clear buffer to prevent re-matching
                             buffer = ""
+                            break
 
                 # Check for completion indicator
                 if completion_indicator and completion_indicator in buffer:
@@ -152,6 +156,41 @@ class WireGuardManager:
             logger.warning("WireGuard configuration file not found.")
             return []
 
+    def wait_for_package_manager(self, timeout=300):
+        """
+        Waits for the package manager to become available by checking for running processes
+        and attempting to run apt update.
+
+        :param timeout: Maximum time to wait in seconds (default: 5 minutes)
+        """
+        logger.debug("Waiting for package manager to become available...")
+
+        wait_command = f"""
+echo "Waiting for package manager to be available..."
+timeout_counter=0
+while [ $timeout_counter -lt {timeout} ]; do
+    if ! pgrep -x apt >/dev/null && ! pgrep -x apt-get >/dev/null && ! pgrep -x dpkg >/dev/null; then
+        if apt update -y >/dev/null 2>&1; then
+            echo "Package manager is now available"
+            exit 0
+        fi
+    fi
+    echo "Waiting for package manager processes to finish... ($timeout_counter/{timeout})"
+    sleep 5
+    timeout_counter=$((timeout_counter + 5))
+done
+echo "Timeout waiting for package manager"
+exit 1
+"""
+
+        try:
+            stdin, stdout, stderr = self.client.exec_command(wait_command)
+            stdout.channel.recv_exit_status()  # Wait for command to complete
+            logger.debug("Package manager is now available")
+        except Exception as e:
+            logger.warning(f"Error waiting for package manager: {e}")
+            raise e
+
     def add_client(self, client_name) -> tuple[str, str]:
         """
         Adds a new WireGuard client. If WireGuard is not installed, it installs it first.
@@ -175,13 +214,17 @@ class WireGuardManager:
             logger.info("WireGuard is not installed. Proceeding with installation.")
             # Define the responses for installation
             responses = [
+                (r"IPv4 address \[1\]:\s*$", "1\n"),  # Select first IPv4 address
                 (r"Port \[51820\]:\s*$", "\n"),  # Accept default port
                 (r"Name \[client\]:\s*$", f"{client_name}\n"),  # Enter client name
                 (r"DNS server \[1\]:\s*$", "3\n"),  # Select DNS option 3
                 (r"Press any key to continue\.\.\.\s*$", "\n"),  # Press any key
             ]
 
-            # Combined installation command
+            # Wait for package manager to be available before installation
+            self.wait_for_package_manager()
+
+            # Download and install WireGuard
             install_command = "wget https://git.io/wireguard -O wireguard-install.sh && bash wireguard-install.sh"
 
             # Execute the installation command with responses

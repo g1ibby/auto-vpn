@@ -64,7 +64,6 @@ class DigitalOceanManager(InfrastructureManager):
             monitoring=True,
             ipv6=True,
             backups=False,  # Disable backups to save cost
-            private_networking=False,
         )
 
         logger.debug(f"Created DigitalOcean droplet with details: {droplet.__dict__}")
