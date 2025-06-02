@@ -57,6 +57,7 @@ class VPNApplication:
                 db_url=self.settings.DATABASE_URL,
                 vultr_api_key=self.settings.VULTR_API_KEY,
                 linode_api_key=self.settings.LINODE_API_KEY,
+                digitalocean_api_key=self.settings.DIGITALOCEAN_API_KEY,
             )
 
         if "vpn_manager" not in st.session_state:
@@ -100,7 +101,7 @@ class VPNApplication:
                     )
                     return response.status_code
                 except Exception as e:
-                    logger.warn(f"Self-ping failed: {e!s}")
+                    logger.warning(f"Self-ping failed: {e!s}")
                     return None
 
             periodic_task_ping = PeriodicTask(

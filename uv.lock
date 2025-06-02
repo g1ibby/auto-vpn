@@ -61,7 +61,7 @@ wheels = [
 
 [[package]]
 name = "auto-vpn"
-version = "0.0.11"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "countryflag" },
@@ -73,6 +73,7 @@ dependencies = [
     { name = "petname" },
     { name = "psycopg2-binary" },
     { name = "pulumi" },
+    { name = "pulumi-digitalocean" },
     { name = "pulumi-linode" },
     { name = "pycountry" },
     { name = "pydantic-settings" },
@@ -113,6 +114,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pulumi", specifier = ">=3.140.0" },
+    { name = "pulumi-digitalocean", specifier = ">=4.45.0" },
     { name = "pulumi-linode", specifier = ">=4.39.0" },
     { name = "pycountry", specifier = ">=24.6.1" },
     { name = "pydantic-settings", specifier = ">=2.6.1" },
@@ -123,7 +125,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.11" },
     { name = "streamlit", specifier = ">=1.45.1" },
-    { name = "streamlit-authenticator", specifier = ">=0.4.1" },
+    { name = "streamlit-authenticator", specifier = ">=0.4.2" },
 ]
 provides-extras = ["dev"]
 
@@ -1139,6 +1141,20 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/1b/14d5e7a76b21c5f168634f9ba05a39efc8239f0f9c120314ab2acf56cde6/pulumi-3.171.0-py3-none-any.whl", hash = "sha256:4092439e01a42509132c2ef837e09317eaf3fd38a4d12faa2b826015e58df094", size = 353578, upload-time = "2025-05-21T16:15:31.019Z" },
+]
+
+[[package]]
+name = "pulumi-digitalocean"
+version = "4.45.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "parver" },
+    { name = "pulumi" },
+    { name = "semver" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/2e/32099759da5b6f50c18da4c1a8d3db1ae8f52b2f6cd543f4c5085509cd5e/pulumi_digitalocean-4.45.0.tar.gz", hash = "sha256:50445d0ae8330edf96ab0fb59a7f07abae5a6f81d89b956adf35e9ae4bd290f6", size = 337976, upload-time = "2025-05-20T04:05:55.238Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/41/05/107aab5f2f50743db10f4ac597864f2bb414da47ed8de2cce824b67ebbe0/pulumi_digitalocean-4.45.0-py3-none-any.whl", hash = "sha256:2bac87a10ec895a9d16f19d3578f6c6fcb694fa68d8654cc7c58ef4a4fd66244", size = 455878, upload-time = "2025-05-20T04:05:53.285Z" },
 ]
 
 [[package]]

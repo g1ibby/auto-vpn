@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to update Pulumi plugins to their latest versions.
-Downloads the latest versions of Linode and Vultr plugins for Linux and Darwin platforms,
+Downloads the latest versions of Linode, Vultr, and DigitalOcean plugins for Linux and Darwin platforms,
 supporting both amd64 and arm64 architectures when available.
 """
 
@@ -23,6 +23,11 @@ PLUGIN_CONFIGS = {
     "vultr": {
         "repo": "dirien/pulumi-vultr",
         "prefix": "pulumi-resource-vultr-v",
+        "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
+    },
+    "digitalocean": {
+        "repo": "pulumi/pulumi-digitalocean",
+        "prefix": "pulumi-resource-digitalocean-v",
         "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
     },
 }

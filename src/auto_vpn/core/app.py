@@ -8,6 +8,7 @@ import requests
 from auto_vpn.db.db import db_instance
 from auto_vpn.db.models import Server, VPNPeer
 from auto_vpn.db.repository import Repository
+from auto_vpn.providers.digitalocean_manager import DigitalOceanManager
 from auto_vpn.providers.infra_manager import InfrastructureManager
 from auto_vpn.providers.linode_manager import LinodeManager
 from auto_vpn.providers.provider_base import CloudProvider
@@ -36,7 +37,7 @@ class App:
     and VPN Managers to manage cloud providers, servers, and VPN peers.
     """
 
-    SUPPORTED_PROVIDERS: ClassVar[set[str]] = {"vultr", "linode"}
+    SUPPORTED_PROVIDERS: ClassVar[set[str]] = {"vultr", "linode", "digitalocean"}
     INACTIVITY_THRESHOLD_KEY = "inactivity_threshold"
     DEFAULT_INACTIVITY_THRESHOLD = timedelta(hours=1)
 
@@ -46,6 +47,7 @@ class App:
         inactivity_threshold: timedelta | None = None,
         vultr_api_key: str | None = None,
         linode_api_key: str | None = None,
+        digitalocean_api_key: str | None = None,
     ):
         db_instance.init_db(db_url=db_url)
 
@@ -53,7 +55,11 @@ class App:
         self.minimum_server_age = timedelta(minutes=15)
 
         # Store API keys
-        self.provider_credentials = {"vultr": vultr_api_key, "linode": linode_api_key}
+        self.provider_credentials = {
+            "vultr": vultr_api_key,
+            "linode": linode_api_key,
+            "digitalocean": digitalocean_api_key,
+        }
 
         # Initialize inactivity threshold setting if it doesn't exist
         try:
@@ -203,7 +209,7 @@ class App:
             try:
                 self.delete_server(server.id)
             except Exception as e:
-                logger.warn(f"Error deleting server {server}: {e}")
+                logger.warning(f"Error deleting server {server}: {e}")
 
     # ----------------- VPN Peer Methods ----------------- #
 
@@ -459,7 +465,7 @@ class App:
             try:
                 self.delete_vpn_peer(peer.id)
             except Exception as e:
-                logger.warn(f"Error deleting VPN peer {peer.peer_name}: {e}")
+                logger.warning(f"Error deleting VPN peer {peer.peer_name}: {e}")
 
     def get_peer_config(self, peer_name: str) -> str:
         """
@@ -504,6 +510,13 @@ class App:
                 project_name=project_name,
                 stack_state=stack_state,
             )
+        elif provider == "digitalocean":
+            return DigitalOceanManager(
+                digitalocean_api_key=self.provider_credentials["digitalocean"],
+                ssh_public_key=ssh_public_key,
+                project_name=project_name,
+                stack_state=stack_state,
+            )
         return None
 
     def _get_all_providers(self) -> list[CloudProvider]:
@@ -521,7 +534,7 @@ class App:
                     if provider:
                         providers.append(provider)
                 except ValueError as e:
-                    logger.warn(f"Could not initialize {provider_name}: {e}")
+                    logger.warning(f"Could not initialize {provider_name}: {e}")
         return providers
 
     def get_available_regions(self) -> list[Region]:
@@ -588,7 +601,7 @@ class App:
                 provider_results = provider.search_smallest(search_term)
                 results.extend(provider_results)
             except requests.HTTPError as e:
-                logger.warn(f"Failed to search {provider.__class__.__name__}: {e}")
+                logger.warning(f"Failed to search {provider.__class__.__name__}: {e}")
 
         # Sort results by instance price (if available), then location
         return sorted(
